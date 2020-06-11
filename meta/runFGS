@@ -1,0 +1,12 @@
+#!/bin/bash
+FILE=project
+if test -f "$FILE"; then
+    echo "[INFO]: Project was already compiled. Do not recompile."
+else
+    echo "[INFO]: Compiling project."
+    cargo build --release
+    cp target/release/project project
+    chmod +x project
+fi
+
+./project "$@"
