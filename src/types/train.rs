@@ -534,11 +534,13 @@ pub fn get_protein(dna: &Vec<char>, strand: bool, wholegenome: bool) -> Vec<char
       }
     }
   }
-
+/*
   if protein[len / 3 - 1] == '*' {
     //remove the ending *
-    protein[len / 3 - 1] = '\0';
+    protein[len / 3 - 1] = ' ';
   }
+  */
+  protein = protein[0..(len / 3 - 1)].to_vec();
 
   if wholegenome {
     return protein; //short reads, skip

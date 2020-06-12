@@ -1,5 +1,5 @@
 use bio::io::fasta;
-use std::io;
+use std::io::{self, Write};
 use std::path::Path;
 mod types;
 use self::types::train::{get_prob_from_cg, Train, HMM};
@@ -128,9 +128,12 @@ fn main() {
      /*
      * Join all of the work of these threads
      */ 
+    let out = io::stdout();
+    let mut handle = out.lock();
     for output in outputs{
-        print!("{}", output.aa);
+        write!(handle, "{}", output.aa);
     }
+    drop(handle);
 
      /*
      * Write output to optional files and stdout
