@@ -1,10 +1,2 @@
 #!/bin/bash
-FILE=project
-if test -f "$FILE"; then
-else
-    cargo build --release
-    cp target/release/project project
-    chmod +x project
-fi
-
 ./project "$@"
