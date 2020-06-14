@@ -19,15 +19,15 @@ pub fn viterbi(
 	format: bool,
 	head: &String,
 ) -> Output {
-	let log53: f64 = (0.53 as f64).log2();
-	let log16: f64 = (0.16 as f64).log2();
-	let log30: f64 = (0.30 as f64).log2();
-	let log25: f64 = (0.25 as f64).log2();
-	let log95: f64 = (0.95 as f64).log2();
-	let log54: f64 = (0.54 as f64).log2();
-	let log83: f64 = (0.83 as f64).log2();
-	let log07: f64 = (0.07 as f64).log2();
-	let max_dbl = 10000000000.0;
+	let log53: f64 = (0.53 as f64).ln();
+	let log16: f64 = (0.16 as f64).ln();
+	let log30: f64 = (0.30 as f64).ln();
+	let log25: f64 = (0.25 as f64).ln();
+	let log95: f64 = (0.95 as f64).ln();
+	let log54: f64 = (0.54 as f64).ln();
+	let log83: f64 = (0.83 as f64).ln();
+	let log07: f64 = (0.07 as f64).ln();
+	let max_dbl = f64::INFINITY;
 
 	let gene_len;
 
@@ -85,7 +85,7 @@ pub fn viterbi(
 		}
 	}
 
-	if (O[2] == 'A' || O[0] == 'a')
+	if (O[2] == 'A' || O[2] == 'a')
 		&& (((O[0] == 'T' || O[0] == 't') && (O[1] == 'T' || O[1] == 't'))
 			|| ((O[0] == 'C' || O[0] == 'c') && (O[1] == 'T' || O[1] == 't'))
 			|| ((O[0] == 'T' || O[0] == 't') && (O[1] == 'C' || O[1] == 'c')))
@@ -157,9 +157,9 @@ pub fn viterbi(
 							for j in (M1_STATE..=M5_STATE).rev() {
 								let mut num_d: isize = -10;
 								if j >= i {
-									num_d = (i as i8 - j as i8 + 6).try_into().unwrap(); // TODO: this seems ugly
+									num_d = i as isize - j as isize + 6; // TODO: this seems ugly
 								} else if j + 1 < i {
-									num_d = (i as i8 - j as i8).try_into().unwrap(); // TODO: this seems ugly
+									num_d = i as isize - j as isize; // TODO: this seems ugly
 								}
 								if num_d > 0 {
 									let temp_alpha = alpha[j][t - 1]
@@ -192,11 +192,11 @@ pub fn viterbi(
 						/* from D state */
 						if !wholegenome {
 							for j in (M1_STATE..=M6_STATE).rev() {
-								let mut num_d: i64 = -10;
+								let mut num_d: isize = -10;
 								if j >= i {
-									num_d = (i as i8 - j as i8 + 6).try_into().unwrap(); // TODO: this seems ugly
+									num_d = i as isize - j as isize + 6; // TODO: this seems ugly
 								} else if j + 1 < i {
-									num_d = (i as i8 - j as i8).try_into().unwrap(); // TODO: this seems ugly
+									num_d = i as isize - j as isize; // TODO: this seems ugly
 								}
 								if num_d > 0 {
 									let temp_alpha = alpha[j][t - 1]
@@ -230,7 +230,8 @@ pub fn viterbi(
 							|| ((O[t] == 'G' || O[t] == 'g')
 								&& (O[t + 1] == 'A' || O[t + 1] == 'a')))
 					{
-					} else if (i == M3_STATE || i == M6_STATE) && temp_i[j - I1_STATE] as isize - 1 > 0
+					}
+					else if (i == M3_STATE || i == M6_STATE) && temp_i[j - I1_STATE] as isize - 1 > 0
 						&& (O[temp_i[j - I1_STATE] - 1] == 'T'
 							|| O[temp_i[j - I1_STATE] - 1] == 't')
 						&& (((O[temp_i[j - I1_STATE]] == 'A' || O[temp_i[j - I1_STATE]] == 'a')
@@ -315,9 +316,9 @@ pub fn viterbi(
 							for j in (M1_STATE_1..=M5_STATE_1).rev() {
 								let mut num_d: isize = -10;
 								if j >= i {
-									num_d = (i as i8 - j as i8 + 6).try_into().unwrap(); // TODO: this seems ugly
+									num_d = i as isize - j as isize + 6; // TODO: this seems ugly
 								} else if j + 1 < i {
-									num_d = (i as i8 - j as i8).try_into().unwrap(); // TODO: this seems ugly
+									num_d = i as isize - j as isize; // TODO: this seems ugly
 								}
 								if num_d > 0 {
 									let temp_alpha = alpha[j][t - 1]
@@ -343,9 +344,9 @@ pub fn viterbi(
 							for j in (M1_STATE_1..=M6_STATE_1).rev() {
 								let mut num_d: isize = -10;
 								if j >= i {
-									num_d = (i as i8 - j as i8 + 6).try_into().unwrap(); // TODO: this seems ugly
+									num_d = i as isize - j as isize + 6; // TODO: this seems ugly
 								} else if j + 1 < i {
-									num_d = (i as i8 - j as i8).try_into().unwrap(); // TODO: this seems ugly
+									num_d = i as isize - j as isize; // TODO: this seems ugly
 								}
 								if num_d > 0 {
 									let temp_alpha = alpha[j][t - 1]
@@ -568,7 +569,7 @@ pub fn viterbi(
 				} else if p_kd > 0.99 {
 					p_kd = 0.99;
 				}
-				alpha[E_STATE][t + 2] = alpha[E_STATE][t + 2] - p_kd.log2();
+				alpha[E_STATE][t + 2] = alpha[E_STATE][t + 2] - p_kd.ln();
 			}
 		}
 
@@ -638,7 +639,7 @@ pub fn viterbi(
 				} else if p_kd > 0.99 {
 					p_kd = 0.99;
 				}
-				alpha[S_STATE_1][t + 2] = alpha[S_STATE_1][t + 2] - (p_kd).log2();
+				alpha[S_STATE_1][t + 2] = alpha[S_STATE_1][t + 2] - (p_kd).ln();
 			}
 		}
 
@@ -678,7 +679,7 @@ pub fn viterbi(
 				if O[t] == 'A' || O[t] == 'a' {
 					alpha[S_STATE][t + 2] = alpha[S_STATE][t + 2] - log83;
 				} else if O[t] == 'G' || O[t] == 'g' {
-					alpha[S_STATE][t + 2] = alpha[S_STATE][t + 2] - (0.10 as f64).log2();
+					alpha[S_STATE][t + 2] = alpha[S_STATE][t + 2] - (0.10 as f64).ln();
 				} else if O[t] == 'T' || O[t] == 't' {
 					alpha[S_STATE][t + 2] = alpha[S_STATE][t + 2] - log07;
 				}
@@ -726,7 +727,7 @@ pub fn viterbi(
 				} else if p_kd > 0.99 {
 					p_kd = 0.99;
 				}
-				alpha[S_STATE][t + 2] = alpha[S_STATE][t + 2] - (p_kd).log2();
+				alpha[S_STATE][t + 2] = alpha[S_STATE][t + 2] - (p_kd).ln();
 			}
 		}
 
@@ -756,7 +757,7 @@ pub fn viterbi(
 				if O[t + 2] == 'T' || O[t + 2] == 't' {
 					alpha[E_STATE_1][t + 2] = alpha[E_STATE_1][t + 2] - log83;
 				} else if O[t + 2] == 'C' || O[t + 2] == 'c' {
-					alpha[E_STATE_1][t + 2] = alpha[E_STATE_1][t + 2] - (0.10 as f64).log2();
+					alpha[E_STATE_1][t + 2] = alpha[E_STATE_1][t + 2] - (0.10 as f64).ln();
 				} else if O[t + 2] == 'A' || O[t + 2] == 'a' {
 					alpha[E_STATE_1][t + 2] = alpha[E_STATE_1][t + 2] - log07;
 				}
@@ -808,7 +809,7 @@ pub fn viterbi(
 				} else if p_kd > 0.99 {
 					p_kd = 0.99;
 				}
-				alpha[E_STATE_1][t + 2] = alpha[E_STATE_1][t + 2] - (p_kd).log2();
+				alpha[E_STATE_1][t + 2] = alpha[E_STATE_1][t + 2] - (p_kd).ln();
 			}
 		}
 		if num_N > 9 {
@@ -827,9 +828,9 @@ pub fn viterbi(
 
 	let head_short: Vec<&str> = head.split_whitespace().collect();
 
-	let mut out = String::new();
-	let mut aa = String::new();
-	let mut dna_output = String::new();
+	let mut out = String::with_capacity(5000);
+	let mut aa = String::with_capacity(5000);
+	let mut dna_output = String::with_capacity(5000);
 
 
 	write!(out, ">{}\n", head_short[0]);
@@ -855,10 +856,10 @@ pub fn viterbi(
 	let mut utr = vec!['\0'; 65];
 
 	let mut dna = vec!['\0'; 300000];
-	let mut dna1: Vec<char>;
+	let mut dna1 = vec!['\0'; 300000];
 	let mut dna_f = vec!['\0'; 300000];
-	let mut dna_f1: Vec<char>;
-	let mut protein: Vec<char>;
+	let mut dna_f1 = vec!['\0'; 300000];
+	let mut protein = vec!['\0'; 100000];
 	let mut insert = [0; 100];
 	let mut delete = [0; 100];
 
@@ -895,10 +896,21 @@ pub fn viterbi(
 				|| vpath[t] == M1_STATE_1
 				|| vpath[t] == M4_STATE_1)
 		{
-			dna = vec!['\0'; 300000];
-			dna_f = vec!['\0'; 300000];
-			insert = [0; 100];
-			delete = [0; 100];
+			for i in 0..300000 {
+				dna[i] = '\0';
+				dna1[i] = '\0';
+				dna_f[i] = '\0';
+				dna_f1[i] = '\0';
+			}
+			for value in protein.iter_mut() {
+				*value = '\0';
+			}
+			for value in insert.iter_mut(){
+				*value = 0;
+			}
+			for value in delete.iter_mut(){
+				*value = 0;
+			}
 
 			insert_id = 0;
 			delete_id = 0;
@@ -967,28 +979,22 @@ pub fn viterbi(
 						//add refinement of the start codons here, Ye, April 16, 2016
 						let start_old = start_t;
 						codon[0] = '\0';
-						for i in 0..3 {
-							// TODO: split this off
-							if ((start_old as usize - 1 + i) as usize) < len_seq {
-								codon[i] = O[(start_old - 1 + i as isize) as usize];
-							} else {
-								codon[i] = '\0';
-							}
-						}
 						strncpy(&mut codon, O, (start_old - 1).try_into().unwrap(), 3);
 						codon[3] = '\0';
 						let mut s = 0;
 						//find the optimal start codon within 30bp up- and downstream of start codon
 						let mut e_save = 0.0;
 						let mut s_save = 0; //initialization, YY July 25 2018
-						while (!(codon.iter().collect::<String>() != "TAA"
-							|| codon.iter().collect::<String>() != "TAG"
-							|| codon.iter().collect::<String>() != "TGA"))
+
+						let mut c = codon[0..3].iter().collect::<String>();
+						while (!(c != "TAA"
+							|| c != "TAG"
+							|| c != "TGA"))
 							&& (start_old - 1 - s - 35 >= 0)
 						{
-							if codon.iter().collect::<String>() != "ATG"
-								|| codon.iter().collect::<String>() != "GTG"
-								|| codon.iter().collect::<String>() != "TTG"
+							if c != "ATG"
+								|| c != "GTG"
+								|| c != "TTG"
 							{
 								utr[0] = '\0';
 								strncpy(
@@ -1000,7 +1006,7 @@ pub fn viterbi(
 								utr[63] = '\0';
 								//printf("check s=%d, codon %s\n", s, codon);
 								let mut freq_sum = 0.0;
-								for j in 0..strlen(&utr.iter().collect()) - 2 {
+								for j in 0..(strlen(&utr.iter().collect()) - 2) {
 									let idx = trinucleotide(&utr[j], &utr[j + 1], &utr[j + 2]);
 									freq_sum -= train.start[cg][j][idx];
 									//printf("j=%d, key=%c%c%c %d, start %lf\n", j, utr[j], utr[j+1], utr[j+2], idx, train_ptr->start[cg][j][idx]);
@@ -1019,6 +1025,7 @@ pub fn viterbi(
 							codon[0] = '\0';
 							strncpy(&mut codon, O, (start_old - 1 - s).try_into().unwrap(), 3);
 							codon[3] = '\0';
+							c = codon[0..3].iter().collect::<String>();
 						}
 						//update start_t YY July 2018
 						if s_save != 0 {
@@ -1027,7 +1034,7 @@ pub fn viterbi(
 						}
 					}
 
-					let mut dna_end_t = end_t;
+					let dna_end_t = end_t;
 
 					write!(
 						out,
@@ -1055,7 +1062,7 @@ pub fn viterbi(
 					dna[dna_end_t - dna_start_t + 1] = '\0';
 					//end of update dna
 
-					protein = get_protein(&dna, true, wholegenome);
+					get_protein(&mut protein, &dna, true, wholegenome);
 					/*
 					if(!(strlen(protein) * 3 == strlen(dna) || strlen(protein) * 3 == strlen(dna) - 3)) {
 					  printf("inconsistent protein/dna length: %d %d\n", strlen(protein), strlen(dna));
@@ -1072,7 +1079,7 @@ pub fn viterbi(
 						">{}_{}_{}_+\n",
 						head_short[0], dna_start_t, dna_end_t
 					);
-					write!(aa, "{}\n", protein.iter().collect::<String>());
+					write!(aa, "{}\n", protein[0..veclen_str(&protein)].iter().collect::<String>());
 
 					if !format {
 						write!(dna_output, "{}\n", dna[0..(dna_end_t - dna_start_t + 1)].iter().collect::<String>());
@@ -1090,14 +1097,16 @@ pub fn viterbi(
 						//find the optimal start codon within 30bp up- and downstream of start codon
 						let mut e_save = 0.0;
 						let mut s_save = 0; //initialization, YY July 25, 2018
-						while (!(codon.iter().collect::<String>() != "TTA"
-							|| codon.iter().collect::<String>() != "CTA"
-							|| codon.iter().collect::<String>() != "TCA"))
+						let mut c = codon[0..3].iter().collect::<String>();
+
+						while (!(c != "TTA"
+							|| c != "CTA"
+							|| c != "TCA"))
 							&& (end_old - 2 + s + 35 < len_seq)
 						{
-							if codon.iter().collect::<String>() != "CAT"
-								|| codon.iter().collect::<String>() != "CAC"
-								|| codon.iter().collect::<String>() != "CAA"
+							if c != "CAT"
+								|| c != "CAC"
+								|| c != "CAA"
 							{
 								utr[0] = '\0';
 								strncpy(&mut utr, O, (end_old - 3 + s - 30) as usize, 63);
@@ -1121,12 +1130,13 @@ pub fn viterbi(
 							codon[0] = '\0';
 							strncpy(&mut codon, O, (end_old - 3 + s) as usize, 3);
 							codon[3] = '\0';
+							c = codon[0..3].iter().collect::<String>();
 						}
 						//update end_t
 						end_t = end_old + s_save;
 					}
 
-					let mut dna_end_t = end_t;
+					let dna_end_t = end_t;
 					write!(
 						out,
 						"{}\t{}\t-\t{}\t{}\t",
@@ -1154,7 +1164,7 @@ pub fn viterbi(
 					dna[dna_end_t - dna_start_t_withstop + 1] = '\0';
 					//end of update dna
 
-					protein = get_protein(&dna, false, wholegenome); //YY July 18, 2018, introduce adjust
+					get_protein(&mut protein, &dna, false, wholegenome); //YY July 18, 2018, introduce adjust
 
 					write!(
 						aa,
@@ -1167,13 +1177,13 @@ pub fn viterbi(
 						head_short[0], dna_start_t_withstop, dna_end_t
 					);
 
-					dna1 = get_rc_dna(&dna[0..((dna_end_t - dna_start_t_withstop + 1))].to_vec());
-					dna_f1 = get_rc_dna_indel(&dna_f[0..((dna_end_t - dna_start_t_withstop + 1))].to_vec());
-					write!(aa, "{}\n", protein.iter().collect::<String>());
+					let dna1_out = get_rc_dna(&dna[0..((dna_end_t - dna_start_t_withstop + 1))].to_vec());
+					let dna_f1_out = get_rc_dna_indel(&dna_f[0..((dna_end_t - dna_start_t_withstop + 1))].to_vec());
+					write!(aa, "{}\n", protein[0..veclen_str(&protein)].iter().collect::<String>());
 					if !format {
-						write!(dna_output, "{}\n", dna1.iter().collect::<String>());
+						write!(dna_output, "{}\n", dna1_out.iter().collect::<String>());
 					} else {
-						write!(dna_output, "{}\n", dna_f1.iter().collect::<String>());
+						write!(dna_output, "{}\n", dna_f1_out.iter().collect::<String>());
 					}
 				}
 			}
@@ -1259,8 +1269,9 @@ fn veclen_str(s: &Vec<char>) -> usize { // TODO: cleanup
 }
 
 fn strncpy(target: &mut Vec<char>, source: &Vec<char>, start_pos: usize, len: usize) {
+	let sourcelen = source.len();
 	for i in start_pos..(start_pos + len) {
-		if i < veclen_str(source) {
+		if i < sourcelen {
 			target[i - start_pos] = source[i];
 		} else {
 			target[i - start_pos] = '\0';

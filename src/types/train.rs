@@ -109,10 +109,10 @@ impl Train {
         for j in 0..16 {
           let line = lines.next().expect(READ_ERROR).expect(READ_ERROR);
           let tup: (f64, f64, f64, f64) = parse_string(&line).expect(READ_ERROR);
-          self.trans[p][i][j][0] = tup.0.log2();
-          self.trans[p][i][j][1] = tup.1.log2();
-          self.trans[p][i][j][2] = tup.2.log2();
-          self.trans[p][i][j][3] = tup.3.log2();
+          self.trans[p][i][j][0] = tup.0.ln();
+          self.trans[p][i][j][1] = tup.1.ln();
+          self.trans[p][i][j][2] = tup.2.ln();
+          self.trans[p][i][j][3] = tup.3.ln();
         }
       }
     }
@@ -129,10 +129,10 @@ impl Train {
         for j in 0..16 {
           let line = lines.next().expect(READ_ERROR).expect(READ_ERROR);
           let tup: (f64, f64, f64, f64) = parse_string(&line).expect(READ_ERROR);
-          self.rtrans[p][i][j][0] = tup.0.log2();
-          self.rtrans[p][i][j][1] = tup.1.log2();
-          self.rtrans[p][i][j][2] = tup.2.log2();
-          self.rtrans[p][i][j][3] = tup.3.log2();
+          self.rtrans[p][i][j][0] = tup.0.ln();
+          self.rtrans[p][i][j][1] = tup.1.ln();
+          self.rtrans[p][i][j][2] = tup.2.ln();
+          self.rtrans[p][i][j][3] = tup.3.ln();
         }
       }
     }
@@ -148,10 +148,10 @@ impl Train {
       for j in 0..4 {
         let line = lines.next().expect(READ_ERROR).expect(READ_ERROR);
         let tup: (f64, f64, f64, f64) = parse_string(&line).expect(READ_ERROR);
-        self.noncoding[p][j][0] = tup.0.log2();
-        self.noncoding[p][j][1] = tup.1.log2();
-        self.noncoding[p][j][2] = tup.2.log2();
-        self.noncoding[p][j][3] = tup.3.log2();
+        self.noncoding[p][j][0] = tup.0.ln();
+        self.noncoding[p][j][1] = tup.1.ln();
+        self.noncoding[p][j][2] = tup.2.ln();
+        self.noncoding[p][j][3] = tup.3.ln();
       }
     }
   }
@@ -195,7 +195,7 @@ impl Train {
         for (k, value) in line.split_whitespace().enumerate() {
           assert!(k < 64, READ_ERROR);
           let prob = value.parse::<f64>().expect(READ_ERROR);
-          self.start[p][j][k] = prob.log2();
+          self.start[p][j][k] = prob.ln();
         }
       }
     }
@@ -213,7 +213,7 @@ impl Train {
         for (k, value) in line.split_whitespace().enumerate() {
           assert!(k < 64, READ_ERROR);
           let prob = value.parse::<f64>().expect(READ_ERROR);
-          self.stop[p][j][k] = prob.log2();
+          self.stop[p][j][k] = prob.ln();
         }
       }
     }
@@ -231,7 +231,7 @@ impl Train {
         for (k, value) in line.split_whitespace().enumerate() {
           assert!(k < 64, READ_ERROR);
           let prob = value.parse::<f64>().expect(READ_ERROR);
-          self.start1[p][j][k] = prob.log2();
+          self.start1[p][j][k] = prob.ln();
         }
       }
     }
@@ -249,7 +249,7 @@ impl Train {
         for (k, value) in line.split_whitespace().enumerate() {
           assert!(k < 64, READ_ERROR);
           let prob = value.parse::<f64>().expect(READ_ERROR);
-          self.stop1[p][j][k] = prob.log2();
+          self.stop1[p][j][k] = prob.ln();
         }
       }
     }
@@ -295,7 +295,7 @@ impl HMM {
         let tup: (String, f64) =
           parse_string(&line).expect("Unable to process 'Transition' from training file.");
         let tr = tr2int(&tup.0);
-        self.tr[tr] = tup.1.log2();
+        self.tr[tr] = tup.1.ln();
       }
       /* transition MI */
       else if index > 15 && index < 32 {
@@ -303,7 +303,7 @@ impl HMM {
           parse_string(&line).expect("Unable to process 'TransitionMI' from training file.");
         let start = nt2int(tup.0);
         let end = nt2int(tup.1);
-        self.tr_m_i[start][end] = tup.2.log2();
+        self.tr_m_i[start][end] = tup.2.ln();
       }
       /* transition II */
       else if index > 32 && index < 49 {
@@ -311,13 +311,13 @@ impl HMM {
           parse_string(&line).expect("Unable to process 'TransitionII' from training file.");
         let start = nt2int(tup.0);
         let end = nt2int(tup.1);
-        self.tr_i_i[start][end] = tup.2.log2();
+        self.tr_i_i[start][end] = tup.2.ln();
       }
       /* PI */
       else if index > 49 {
         let tup: (String, f64) =
           parse_string(&line).expect("Unable to process 'PI' from training file.");
-        self.initial_state[index - 50] = tup.1.log2();
+        self.initial_state[index - 50] = tup.1.ln();
       }
     }
   }
@@ -516,9 +516,8 @@ fn strlen(s: &Vec<char>) -> usize { // TODO: cleanup
 	result
 }
 
-pub fn get_protein(dna: &Vec<char>, strand: bool, wholegenome: bool) -> Vec<char> {
+pub fn get_protein(protein: &mut Vec<char>, dna: &Vec<char>, strand: bool, wholegenome: bool) {
   let len = strlen(dna);
-  let mut protein = vec![' '; len / 3];
 
   if strand {
     for i in (0..len).step_by(3) {
@@ -541,11 +540,11 @@ pub fn get_protein(dna: &Vec<char>, strand: bool, wholegenome: bool) -> Vec<char
   }
   */
   if protein[len / 3 - 1] == '*' {
-    protein = protein[0..(len / 3 - 1)].to_vec();
+    protein[len / 3 - 1] = '\0';
   }
 
   if wholegenome {
-    return protein; //short reads, skip
+    return; //short reads, skip
   }
 
   if strand {
@@ -559,5 +558,4 @@ pub fn get_protein(dna: &Vec<char>, strand: bool, wholegenome: bool) -> Vec<char
       protein[0] = 'M';
     }
   }
-  protein
 }
