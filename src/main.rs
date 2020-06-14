@@ -91,11 +91,12 @@ fn main() {
         .value_of("threads")
         .unwrap()
         .parse()
-        .expect("ERROR: The parameter -t should have a numeric value.");
+        .expect("ERROR: The parameter -p should have a numeric value.");
     if threadnum < 1 {
         println!("ERROR: Invalid number of threads");
         return;
     }
+    rayon::ThreadPoolBuilder::new().num_threads(threadnum).build_global().unwrap();
 
     /*
      * Next we should read the fasta sequences from STDIN, start our threads and do some work
