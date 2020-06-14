@@ -4,11 +4,8 @@ use std::path::Path;
 mod types;
 use self::types::train::{get_prob_from_cg, Train, HMM};
 use self::types::viterbi::{viterbi, Output};
-use rayon::prelude::*;
 use clap::{App, Arg};
-use std::fs::File;
-
-
+use rayon::prelude::*;
 
 fn main() {
     let matches = App::new("FragGeneScan.Rs")
@@ -78,15 +75,23 @@ fn main() {
     Process the -w parameter
     */
     let wholegenome = matches.value_of("whole-genome").unwrap();
-    let wholegenome = match wholegenome { "1" => true, "0" => false, _ => {
-        println!("ERROR: Invalid value specified for -w.");
-        return;
-    }};
+    let wholegenome = match wholegenome {
+        "1" => true,
+        "0" => false,
+        _ => {
+            println!("ERROR: Invalid value specified for -w.");
+            return;
+        }
+    };
 
     /*
     Process the -p parameter
     */
-    let threadnum: usize = matches.value_of("threads").unwrap().parse().expect("ERROR: The parameter -t should have a numeric value.");
+    let threadnum: usize = matches
+        .value_of("threads")
+        .unwrap()
+        .parse()
+        .expect("ERROR: The parameter -t should have a numeric value.");
     if threadnum < 1 {
         println!("ERROR: Invalid number of threads");
         return;
@@ -95,95 +100,43 @@ fn main() {
     /*
      * Next we should read the fasta sequences from STDIN, start our threads and do some work
      */
-    let format = false; // TODO: this parameter was undocumented up until now...
-    let reader = fasta::Reader::new(io::stdin());
-    let mut records: Vec<(String, String)> = Vec::new();
+    let format = false;
+    let records: Vec<(String, String)> = fasta::Reader::new(io::stdin())
+        .records()
+        .map(|result| {
+            let record = result.unwrap();
+            // obtain sequence
+            let seq = std::str::from_utf8(record.seq()).unwrap().to_string();
+            let id = String::from(record.id());
+            (id, seq)
+        })
+        .collect();
 
-
-    for result in reader.records(){
-        // obtain record or fail with error
-        let record = result.unwrap();
-        // obtain sequence
-        let seq = record.seq();
-        let desc = String::from(record.id());
-        let sequence = std::str::from_utf8(seq).unwrap().to_string();
-        records.push((desc, sequence))
-    }
-
-    let outputs: Vec<Output> = records.into_par_iter()
-    .map(|(header, sequence)| {
-        let mut local_hmm = hmm.clone();
-        let cg = get_prob_from_cg(&mut local_hmm, &train, &sequence);
-        viterbi(
-            &local_hmm,
-            &train,
-            &sequence,
-            wholegenome,
-            cg,
-            format,
-            &header,
-        )
-    }).collect();
-
-     /*
-     * Join all of the work of these threads
-     */ 
-    let out = io::stdout();
-    let mut handle = out.lock();
-    for output in outputs{
-        write!(handle, "{}", output.aa);
-    }
-    drop(handle);
-
-     /*
-     * Write output to optional files and stdout
-    */
+    let outputs: Vec<Output> = records
+        .into_par_iter()
+        .map(|(header, sequence)| {
+            let mut local_hmm = hmm.clone();
+            let cg = get_prob_from_cg(&mut local_hmm, &train, &sequence);
+            viterbi(
+                &local_hmm,
+                &train,
+                &sequence,
+                wholegenome,
+                cg,
+                format,
+                &header,
+            )
+        })
+        .collect();
 
     /*
-    // TODO: Process command line arguments
-    // TODO: fill train and hmm structs using cmd arguments
-    let reader = fasta::Reader::new(io::stdin());
-    let _train = Train::from_file();
-    let _hmm = HMM::from_file(&String::from("train/illumina_1"));
-    for result in reader.records() {
-        // obtain record or fail with error
-        let record = result.unwrap();
-        // obtain sequence
-        let seq = record.seq();
-        let string = std::str::from_utf8(seq).unwrap().to_string();
-        println!("{}", string);
-    }
-    */
+     * Join all of the work of these threads
+     */
+    // TODO: metadata files
+    let out = io::stdout();
+    let mut handle = out.lock();
+    outputs.into_iter().for_each(|output| {
+        write!(handle, "{}", output.aa);
+    });
+    drop(handle);
 }
-/*
-pub struct ThreadData {
-    out_file: File,
-    aa_file: File,
-    dna_file: File,
-    head: String,
-    sequence: String,
-    wholegenome: bool,
-    cg: usize,
-    format: bool,
-    hmm: HMM,
-    train: Train,
-}
-
-fn thread_func(data: &mut ThreadData) {
-    data.cg = get_prob_from_cg(&mut data.hmm, &data.train, &data.sequence); //cg - 26 Ye April 16, 2016
-    if data.sequence.chars().count() > 70 {
-        viterbi(
-            &data.hmm,
-            &data.train,
-            &data.sequence,
-            data.wholegenome,
-            data.cg,
-            data.format,
-            &data.head,
-            &mut data.out_file,
-            &mut data.aa_file,
-            &mut data.dna_file,
-        )
-    }
-}
-*/

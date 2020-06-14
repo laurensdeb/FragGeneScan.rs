@@ -343,8 +343,7 @@ pub fn get_prob_from_cg(hmm: &mut HMM, train: &Train, seq: &String) -> usize {
     cg_count = 0;
   } else if cg_count_i > 43 {
     cg_count = 43;
-  }
-  else {
+  } else {
     cg_count = cg_count_i as usize;
   }
   hmm.e_m = train.trans[cg_count].clone();
@@ -503,17 +502,17 @@ pub fn get_rc_dna_indel(dna: &Vec<char>) -> Vec<char> {
   result
 }
 
-fn strlen(s: &Vec<char>) -> usize { // TODO: cleanup
-	let mut result = 0;
-	for c in s.iter() {
-		if *c != '\0' {
-			result += 1;
-    }
-    else{
+fn strlen(s: &Vec<char>) -> usize {
+  // TODO: cleanup
+  let mut result = 0;
+  for c in s.iter() {
+    if *c != '\0' {
+      result += 1;
+    } else {
       break;
     }
-	}
-	result
+  }
+  result
 }
 
 pub fn get_protein(protein: &mut Vec<char>, dna: &Vec<char>, strand: bool, wholegenome: bool) {
@@ -521,19 +520,19 @@ pub fn get_protein(protein: &mut Vec<char>, dna: &Vec<char>, strand: bool, whole
 
   if strand {
     for i in (0..len).step_by(3) {
-      if i/3 < len/3 {
-      protein[i / 3] = CODON_CODE[trinucleotide_pep(&dna[i], &dna[i + 1], &dna[i + 2])];
+      if i / 3 < len / 3 {
+        protein[i / 3] = CODON_CODE[trinucleotide_pep(&dna[i], &dna[i + 1], &dna[i + 2])];
       }
     }
   } else {
     for i in (0..len).step_by(3) {
       if (len - i) / 3 > 0 {
-      protein[(len - i) / 3 - 1] =
-        ANTI_CODON_CODE[trinucleotide_pep(&dna[i], &dna[i + 1], &dna[i + 2])];
+        protein[(len - i) / 3 - 1] =
+          ANTI_CODON_CODE[trinucleotide_pep(&dna[i], &dna[i + 1], &dna[i + 2])];
       }
     }
   }
-/*
+  /*
   if protein[len / 3 - 1] == '*' {
     //remove the ending *
     protein[len / 3 - 1] = ' ';
