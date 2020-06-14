@@ -1,5 +1,5 @@
 [package]
-name = "project"
+name = "FragGeneScanRs"
 version = "0.1.0"
 authors = ["Laurens Debackere <laurens.debackere@ugent.be>"]
 edition = "2018"

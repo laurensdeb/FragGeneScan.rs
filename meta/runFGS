@@ -1,3 +1,14 @@
 #!/bin/bash
-chmod +x project
-./project "$@"
+
+FILE=FragGeneScanRs
+BUILDPATH=./target/release
+EXEC=./FragGeneScanRs
+
+if [ ! -f "$FILE" ]; then
+    # EXECUTABLE DOESN'T EXIST YET, WE SHOULD BUILD
+    cargo build --release
+    mv $BUILDPATH/$FILE $EXEC
+    chmod +x $EXEC
+fi
+
+$EXEC "$@"
