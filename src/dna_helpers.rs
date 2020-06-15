@@ -1,4 +1,5 @@
 use super::train::{Train, HMM};
+use rayon::prelude::*;
 
 /**
  * dna_helpers.rs
@@ -29,14 +30,13 @@ Code for loading the relevant information into the HMM struct for this CG value 
 */
 pub fn get_prob_from_cg(hmm: &mut HMM, train: &Train, seq: &String) -> usize {
     //change from void to int, Ye, April 18, 2016
-    let mut cg_count: usize = 0;
-    let len_seq = seq.len();
-    for c in seq.chars() {
-        cg_count += match c {
+    let mut cg_count: usize = seq.chars().collect::<Vec<char>>().into_par_iter().map(|c|  match c {
             'c' | 'C' | 'g' | 'G' => 1,
             _ => 0,
-        }
-    }
+        }).sum();
+    
+    let len_seq = seq.len();
+
     let cg_count_i = ((((cg_count as f64 * 1.0) / len_seq as f64) * 100.0).floor() as i32) - 26;
     if cg_count_i < 0 {
         cg_count = 0;
@@ -208,12 +208,16 @@ pub fn get_protein(dna: &Vec<char>, strand: bool, wholegenome: bool) -> Vec<char
     }
     if strand {
         let s = trinucleotide_pep(&dna[0], &dna[1], &dna[2]);
-        if s == trinucleotide_pep(&'G', &'T', &'G') || s == trinucleotide_pep(&'T', &'T', &'G') {
+        // trinucleotide_pep(&'G', &'T', &'G') == 46
+        // trinucleotide_pep(&'T', &'T', &'G') == 62
+        if s == 46 || s == 62 {
             protein[0] = 'M';
         }
     } else {
         let s = trinucleotide_pep(&dna[len - 3], &dna[len - 2], &dna[len - 1]);
-        if s == trinucleotide_pep(&'C', &'A', &'C') || s == trinucleotide_pep(&'C', &'A', &'A') {
+        // trinucleotide_pep(&'C', &'A', &'C') == 17
+        // trinucleotide_pep(&'C', &'A', &'A') == 16
+        if s == 17 || s == 16 {
             protein[0] = 'M';
         }
     }

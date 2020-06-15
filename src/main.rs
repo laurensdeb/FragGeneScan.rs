@@ -114,6 +114,7 @@ fn main() {
             println!("ERROR: Invalid number of threads");
             return;
         }
+        // Configure threadpool based on specifed number of threads
         rayon::ThreadPoolBuilder::new()
             .num_threads(threadnum)
             .build_global()
