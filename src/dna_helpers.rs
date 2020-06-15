@@ -172,12 +172,7 @@ fn trinucleotide_pep(a: &char, b: &char, c: &char) -> usize {
  * Get reverse coding DNA
  */
 pub fn get_rc_dna(dna: &Vec<char>) -> Vec<char> {
-    let len = dna.len();
-    let mut result = vec!['\0'; len];
-    for (i, c) in dna.iter().enumerate() {
-        result[len - i - 1] = CODON[nt2int_rc(&*c)]
-    }
-    result
+    dna.par_iter().rev().map(|c| CODON[nt2int_rc(&*c)]).collect()
 }
 
 /**
