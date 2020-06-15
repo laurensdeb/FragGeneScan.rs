@@ -1,10 +1,13 @@
+mod train;
+mod viterbi;
+mod constants;
+
 use bio::io::fasta;
 use std::fs::File;
 use std::io::{self, Write};
 use std::path::Path;
-mod types;
-use self::types::train::{get_prob_from_cg, Train, HMM};
-use self::types::viterbi::{viterbi, Prediction};
+use train::{get_prob_from_cg, Train, HMM};
+use viterbi::{viterbi, Prediction};
 use clap::{App, Arg};
 use rayon::prelude::*;
 
@@ -153,7 +156,7 @@ fn main() {
         // TODO: write to OUT if parameter is present
         // TODO: write to DNA if parameter is present
         if metadata_output.is_some() {
-            writeln!(metadata_output.as_ref().unwrap(), "{}", prediction.head);
+            write_data(metadata_output.as_mut().unwrap(), format!("{}", prediction.head));
         }
         for out in prediction.outs {
             print_aa(
@@ -199,14 +202,14 @@ fn print_aa(head: &String, start_t: usize, end_t: usize, forward: bool, protein:
     println!("{}", protein);
 }
 fn print_dna_metadata(dna_output: &mut File, head: &String, start_t: usize, end_t: usize, forward: bool, dna: &String) {
-    writeln!(dna_output,
-        ">{}_{}_{}_{}",
+    write_data(dna_output,
+        format!(">{}_{}_{}_{}\n",
         head,
         start_t,
         end_t,
-        forward_to_chr(forward)
+        forward_to_chr(forward))
     );
-    writeln!(dna_output, "{}", dna);
+    write_data(dna_output, format!("{}", dna));
 }
 fn print_metadata(
     out: &mut File,
@@ -217,20 +220,20 @@ fn print_metadata(
     insert: Vec<usize>,
     delete: Vec<usize>,
 ) {
-    write!(
+    write_data(
         out,
-        "{}\t{}\t+\t{}\t{}\t",
-        start_t, end_t, frame, final_score
+        format!("{}\t{}\t+\t{}\t{}\t",
+        start_t, end_t, frame, final_score)
     );
-    write!(out, "I:");
+    write_data(out, String::from("I:"));
     for i in insert {
-        write!(out, "{},", i);
+        write_data(out, format!("{},", i));
     }
-    write!(out, "\tD:");
+    write_data(out, String::from("\tD:"));
     for d in delete {
-        write!(out, "{},", d);
+        write_data(out, format!("{},", d));
     }
-    write!(out, "\n");
+    write_data(out, String::from("\n"));
 }
 
 fn forward_to_chr(forward: bool) -> char {
@@ -247,5 +250,12 @@ fn create_file_if_not_exists(path: &str) -> File {
         )
         .expect("Error: unable to open output file"),
         false => File::create(path).expect("Error: unable to create output file")
+    }
+}
+
+fn write_data(output: &mut File, data: String){
+    match write!(output, "{}", data) {
+        Err(e) => println!("Error: {:?}", e),
+        _ => ()
     }
 }

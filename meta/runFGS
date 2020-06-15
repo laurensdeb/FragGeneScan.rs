@@ -1,13 +1,13 @@
 #!/bin/bash
 
-FILE=FragGeneScanRs
+FILE=fgsrs
 BUILDPATH=./target/release
-EXEC=./FragGeneScanRs
+EXEC=./fgsrs
 
 if [ ! -f "$FILE" ]; then
     # EXECUTABLE DOESN'T EXIST YET, WE SHOULD BUILD
     cargo build --release
-    mv $BUILDPATH/$FILE $EXEC
+    cp $BUILDPATH/$FILE $EXEC
     chmod +x $EXEC
 fi
 
