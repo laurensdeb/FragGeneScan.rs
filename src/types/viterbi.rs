@@ -2,13 +2,28 @@ use super::constants::*;
 use super::train::{get_protein, get_rc_dna, get_rc_dna_indel, nt2int, trinucleotide, Train, HMM};
 use std::convert::TryInto;
 use std::fmt::Write;
+use rayon::prelude::*;
 
-#[derive(Clone, Debug)]
-pub struct Output {
-	pub out: String,
-	pub aa: String,
-	pub dna: String,
+pub struct Prediction {
+	pub head: String,
+	pub outs: Vec<Out>
 }
+
+pub struct Out {
+	pub dna_start_t: usize,
+	pub dna_end_t: usize,
+	pub frame: usize,
+	pub final_score: f64,
+	pub insert: Vec<usize>,
+	pub delete: Vec<usize>,
+
+	pub protein: String,
+	pub dna: String,
+
+	pub forward: bool
+}
+
+
 
 pub fn viterbi(
 	hmm: &HMM,
@@ -16,9 +31,8 @@ pub fn viterbi(
 	O: &String,
 	wholegenome: bool,
 	cg: usize,
-	format: bool,
 	head: &String,
-) -> Output {
+) -> Prediction {
 	let log53: f64 = (0.53 as f64).ln();
 	let log16: f64 = (0.16 as f64).ln();
 	let log30: f64 = (0.30 as f64).ln();
@@ -32,7 +46,6 @@ pub fn viterbi(
 	let gene_len;
 
 	let mut dna_id = 0;
-	let mut dna_f_id = 0;
 
 	let mut temp_i = [0; 6];
 	let mut temp_i_1 = [0; 6];
@@ -139,10 +152,9 @@ pub fn viterbi(
 		/******************/
 		/* M state        */
 		/******************/
-
-		for i in M1_STATE..=M6_STATE {
-			if alpha[i][t] < max_dbl {
-				if t != 0 {
+		if t != 0 {
+			for i in M1_STATE..=M6_STATE {
+				if alpha[i][t] < max_dbl {
 					let mut j;
 					if i == M1_STATE {
 						/* from M state */
@@ -253,9 +265,9 @@ pub fn viterbi(
 		/******************/
 		/* I state        */
 		/******************/
-		for i in I1_STATE..=I6_STATE {
-			let mut j;
-			if t != 0 {
+		if t != 0 {
+			for i in I1_STATE..=I6_STATE {
+				let mut j;
 				/* from I state */
 				j = i;
 				alpha[i][t] = alpha[j][t - 1] - hmm.tr[TR_II] - hmm.tr_i_i[from][to];
@@ -412,8 +424,8 @@ pub fn viterbi(
 		/******************/
 		/* I' state        */
 		/******************/
-		for i in I1_STATE_1..=I6_STATE_1 {
-			if t != 0 {
+		if t != 0 {
+			for i in I1_STATE_1..=I6_STATE_1 {
 				/* from I state */
 				let mut j = i;
 				alpha[i][t] = alpha[j][t - 1] - hmm.tr[TR_II] - hmm.tr_i_i[from][to];
@@ -826,13 +838,7 @@ pub fn viterbi(
 	/* backtrack array to find the optimal path                */
 	/***********************************************************/
 
-	let head_short: Vec<&str> = head.split_whitespace().collect();
-
-	let mut out = String::with_capacity(5000);
-	let mut aa = String::with_capacity(5000);
-	let mut dna_output = String::with_capacity(5000);
-
-	write!(out, ">{}\n", head_short[0]);
+	let mut prediction = Prediction { head: head.to_string(), outs: Vec::new()};
 
 	/* find the state for O[N] with the highest probability */
 	let mut prob = f64::INFINITY;
@@ -854,13 +860,8 @@ pub fn viterbi(
 	let mut codon = vec!['\0'; 4];
 	let mut utr = vec!['\0'; 65];
 
-	let mut dna = vec!['\0'; 300000];
-	let mut dna1 = vec!['\0'; 300000];
-	let mut dna_f = vec!['\0'; 300000];
-	let mut dna_f1 = vec!['\0'; 300000];
-	let mut protein = vec!['\0'; 100000];
-	let mut insert = [0; 100];
-	let mut delete = [0; 100];
+	let mut insert: [usize; 100] = [0; 100];
+	let mut delete: [usize; 100] = [0; 100];
 
 	let mut start_orf = 0;
 	let mut prev_match = 0;
@@ -895,27 +896,16 @@ pub fn viterbi(
 				|| vpath[t] == M1_STATE_1
 				|| vpath[t] == M4_STATE_1)
 		{
-			for i in 0..300000 {
-				dna[i] = '\0';
-				dna1[i] = '\0';
-				dna_f[i] = '\0';
-				dna_f1[i] = '\0';
-			}
-			for value in protein.iter_mut() {
-				*value = '\0';
-			}
-			for value in insert.iter_mut() {
-				*value = 0;
-			}
-			for value in delete.iter_mut() {
-				*value = 0;
-			}
+
+			insert.par_iter_mut()
+			.for_each(|p| *p = 0);
+
+			delete.par_iter_mut()
+			.for_each(|p| *p = 0);
 
 			insert_id = 0;
 			delete_id = 0;
 			dna_id = 0;
-			dna_f_id = 0;
-			dna[dna_id] = O[t];
 			dna_start_t_withstop = t + 1; //Ye April 21, 2016
 			dna_start_t = t + 1;
 			if vpath[t] == M1_STATE_1 || vpath[t] == M4_STATE_1 {
@@ -923,7 +913,6 @@ pub fn viterbi(
 					dna_start_t_withstop = t - 2;
 				}
 			}
-			dna_f[dna_f_id] = O[t];
 			//printf("Note start dna: t = %d, dna_id %d, dna_f_id %d, add %c\n", t, dna_id, dna_f_id, O[t]);
 			start_orf = t + 1;
 			prev_match = vpath[t];
@@ -947,12 +936,7 @@ pub fn viterbi(
 					&& vpath[temp_t] != M1_STATE_1
 					&& vpath[temp_t] != M4_STATE_1
 				{
-					dna_f[dna_f_id] = '\0';
-					dna_f_id -= 1;
-
-					dna[dna_id] = '\0';
 					dna_id -= 1;
-
 					temp_t -= 1;
 				}
 				end_t = temp_t; //??? YY July 2018
@@ -1030,63 +1014,33 @@ pub fn viterbi(
 
 					let dna_end_t = end_t;
 
-					write!(
-						out,
-						"{}\t{}\t+\t{}\t{}\t",
-						dna_start_t, dna_end_t, frame, final_score
+					let protein = get_protein(
+						&O[dna_start_t - 1..dna_end_t].to_vec(),
+						true,
+						wholegenome,
 					);
-					write!(out, "I:");
+
+					let mut out = Out { dna_start_t: dna_start_t,
+									dna_end_t: dna_end_t,
+									frame: frame,
+									final_score: final_score,
+									insert: Vec::new(),
+									delete: Vec::new(),
+									protein: protein.iter().collect::<String>(),
+									forward: true,
+									dna: O[dna_start_t - 1..dna_end_t]
+									.to_vec()
+									.iter()
+									.collect::<String>()
+								};
+
 					for i in 0..insert_id {
-						write!(out, "{},", insert[i]);
+						out.insert.push(insert[i])
 					}
-					write!(out, "\tD:");
 					for i in 0..delete_id {
-						write!(out, "{},", delete[i]);
+						out.delete.push(delete[i])
 					}
-					write!(out, "\n");
-
-					//update dna before calling get_protein, YY July 2018
-					dna[0] = '\0';
-					strncpy(&mut dna, O, dna_start_t - 1, dna_end_t - dna_start_t + 1);
-					dna[dna_end_t - dna_start_t + 1] = '\0';
-					//end of update dna
-
-					get_protein(&mut protein, &dna, true, wholegenome);
-					/*
-					if(!(strlen(protein) * 3 == strlen(dna) || strlen(protein) * 3 == strlen(dna) - 3)) {
-					  printf("inconsistent protein/dna length: %d %d\n", strlen(protein), strlen(dna));
-					  exit(0);
-					}
-					*/
-					write!(aa, ">{}_{}_{}_+\n", head_short[0], dna_start_t, dna_end_t);
-					write!(
-						dna_output,
-						">{}_{}_{}_+\n",
-						head_short[0], dna_start_t, dna_end_t
-					);
-					write!(
-						aa,
-						"{}\n",
-						protein[0..veclen_str(&protein)].iter().collect::<String>()
-					);
-
-					if !format {
-						write!(
-							dna_output,
-							"{}\n",
-							dna[0..(dna_end_t - dna_start_t + 1)]
-								.iter()
-								.collect::<String>()
-						);
-					} else {
-						write!(
-							dna_output,
-							"{}\n",
-							dna_f[0..(dna_end_t - dna_start_t + 1)]
-								.iter()
-								.collect::<String>()
-						);
-					}
+					prediction.outs.push(out);
 				} else if codon_start == -1 {
 					if refine {
 						//add refinement of the start codons here, Ye, April 16, 2016
@@ -1133,67 +1087,41 @@ pub fn viterbi(
 					}
 
 					let dna_end_t = end_t;
-					write!(
-						out,
-						"{}\t{}\t-\t{}\t{}\t",
-						dna_start_t_withstop, dna_end_t, frame, final_score
-					);
-					write!(out, "I:");
-					for i in 0..insert_id {
-						write!(out, "{},", insert[i]);
-					}
-					write!(out, "\tD:");
-					for i in 0..delete_id {
-						write!(out, "{},", delete[i]);
-					}
-					write!(out, "\n");
 
 					//update dna before calling get_protein, YY July 2018
 					//use dna_end_t & dna_start_w_withstop to avoid incomplete codons & include start/stop codons
-					dna[0] = '\0';
-					strncpy(
-						&mut dna,
-						O,
-						dna_start_t_withstop - 1,
-						dna_end_t - dna_start_t_withstop + 1,
-					);
-					dna[dna_end_t - dna_start_t_withstop + 1] = '\0';
-					//end of update dna
 
-					get_protein(&mut protein, &dna, false, wholegenome); //YY July 18, 2018, introduce adjust
+					let protein = get_protein(
+						&O[dna_start_t_withstop - 1..dna_end_t].to_vec(),
+						false,
+						wholegenome,
+					); //YY July 18, 2018, introduce adjust
 
-					write!(
-						aa,
-						">{}_{}_{}_-\n",
-						head_short[0], dna_start_t_withstop, dna_end_t
-					);
-					write!(
-						dna_output,
-						">{}_{}_{}_-\n",
-						head_short[0], dna_start_t_withstop, dna_end_t
-					);
+					let dna1_out = get_rc_dna(&O[dna_start_t_withstop - 1..dna_end_t].to_vec());
 
-					let dna1_out =
-						get_rc_dna(&dna[0..(dna_end_t - dna_start_t_withstop + 1)].to_vec());
-					let dna_f1_out = get_rc_dna_indel(
-						&dna_f[0..(dna_end_t - dna_start_t_withstop + 1)].to_vec(),
-					);
-					write!(
-						aa,
-						"{}\n",
-						protein[0..veclen_str(&protein)].iter().collect::<String>()
-					);
-					if !format {
-						write!(dna_output, "{}\n", dna1_out.iter().collect::<String>());
-					} else {
-						write!(dna_output, "{}\n", dna_f1_out.iter().collect::<String>());
+					let mut out = Out { dna_start_t: dna_start_t_withstop,
+						dna_end_t: dna_end_t,
+						frame: frame,
+						final_score: final_score,
+						insert: Vec::new(),
+						delete: Vec::new(),
+						protein: protein.iter().collect::<String>(),
+						forward: false,
+						dna: dna1_out.iter().collect::<String>()
+					};
+
+					for i in 0..insert_id {
+						out.insert.push(insert[i])
 					}
+					for i in 0..delete_id {
+						out.delete.push(delete[i])
+					}
+					prediction.outs.push(out);
 				}
 			}
 			codon_start = 0;
 			start_t = -1;
 			dna_id = 0;
-			dna_f_id = 0;
 		} else if codon_start != 0
 			&& ((vpath[t] >= M1_STATE && vpath[t] <= M6_STATE)
 				|| (vpath[t] >= M1_STATE_1 && vpath[t] <= M6_STATE_1))
@@ -1208,59 +1136,34 @@ pub fn viterbi(
 			for kk in 0..out_nt {
 				/* for deleted nt in reads */
 				dna_id += 1;
-				dna[dna_id] = 'N';
 				//printf("dna_id %d, dna-len %d\n", dna_id, strlen(dna));
-				dna_f_id += 1;
-				dna_f[dna_f_id] = 'x';
 				if kk > 0 {
-					delete[delete_id] = (t + 1) as i8;
+					delete[delete_id] = (t + 1) as usize;
 					delete_id += 1;
 				}
 			}
-			dna[dna_id] = O[t];
 			//printf("dna_id %d, add %d %c dna-len %d\n", dna_id, t, O[t], strlen(dna));
-			dna_f[dna_f_id] = O[t];
 			prev_match = vpath[t];
 		} else if codon_start != 0
 			&& ((vpath[t] >= I1_STATE && vpath[t] <= I6_STATE)
 				|| (vpath[t] >= I1_STATE_1 && vpath[t] <= I6_STATE_1))
 		{
-			dna_f_id += 1;
-			dna_f[dna_f_id] = O[t].to_lowercase().collect::<Vec<char>>()[0]; // TODO:  not so elegant
-			insert[insert_id] = (t + 1) as i8;
+			insert[insert_id] = (t + 1) as usize;
 			insert_id += 1;
 		} else if codon_start != 0 && vpath[t] == R_STATE {
 			/* for long NNNNNNNNN, pretend R state */
 			codon_start = 0;
 			start_t = -1;
 			dna_id = 0;
-			dna_f_id = 0;
 		}
 	}
-	Output {
-		out: out,
-		aa: aa,
-		dna: dna_output,
-	}
+	prediction
 }
 
 fn strlen(s: &String) -> usize {
 	let mut result = 0;
 	for c in s.chars() {
 		if c != '\0' {
-			result += 1;
-		} else {
-			break;
-		}
-	}
-	result
-}
-
-fn veclen_str(s: &Vec<char>) -> usize {
-	// TODO: cleanup
-	let mut result = 0;
-	for c in s.iter() {
-		if *c != '\0' {
 			result += 1;
 		} else {
 			break;

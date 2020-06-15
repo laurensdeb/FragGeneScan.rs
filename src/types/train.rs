@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::path::PathBuf;
 use whiteread::parse_string;
+use std::env;
 
 const MFILENAME: &'static str = "train/gene";
 const M1FILENAME: &'static str = "train/rgene";
@@ -100,7 +102,9 @@ impl Train {
   }
   fn load_m_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/gene.";
-    let file = File::open(MFILENAME).expect(READ_ERROR);
+    let mut path = get_executable_path();
+    path.push(MFILENAME);
+    let file = File::open(path).expect(READ_ERROR);
     let mut lines = BufReader::new(file).lines();
 
     for p in 0..44 {
@@ -120,7 +124,9 @@ impl Train {
 
   fn load_m_1_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/rgene.";
-    let file = File::open(M1FILENAME).expect(READ_ERROR);
+    let mut path = get_executable_path();
+    path.push(M1FILENAME);
+    let file = File::open(path).expect(READ_ERROR);
     let mut lines = BufReader::new(file).lines();
 
     for p in 0..44 {
@@ -140,7 +146,9 @@ impl Train {
 
   fn load_noncoding_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/noncoding.";
-    let file = File::open(NFILENAME).expect(READ_ERROR);
+    let mut path = get_executable_path();
+    path.push(NFILENAME);
+    let file = File::open(path).expect(READ_ERROR);
     let mut lines = BufReader::new(file).lines();
 
     for p in 0..44 {
@@ -158,7 +166,9 @@ impl Train {
 
   fn load_pwm_dist(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/noncoding.";
-    let file = File::open(DFILENAME).expect(READ_ERROR);
+    let mut path = get_executable_path();
+    path.push(DFILENAME);
+    let file = File::open(path).expect(READ_ERROR);
     let mut lines = BufReader::new(file).lines();
 
     for p in 0..44 {
@@ -185,7 +195,9 @@ impl Train {
 
   fn load_start_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/start.";
-    let file = File::open(SFILENAME).expect(READ_ERROR);
+    let mut path = get_executable_path();
+    path.push(SFILENAME);
+    let file = File::open(path).expect(READ_ERROR);
     let mut lines = BufReader::new(file).lines();
 
     for p in 0..44 {
@@ -203,7 +215,9 @@ impl Train {
 
   fn load_stop_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/stop.";
-    let file = File::open(PFILENAME).expect(READ_ERROR);
+    let mut path = get_executable_path();
+    path.push(PFILENAME);
+    let file = File::open(path).expect(READ_ERROR);
     let mut lines = BufReader::new(file).lines();
 
     for p in 0..44 {
@@ -221,7 +235,9 @@ impl Train {
 
   fn load_start_1_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/stop1.";
-    let file = File::open(S1FILENAME).expect(READ_ERROR);
+    let mut path = get_executable_path();
+    path.push(S1FILENAME);
+    let file = File::open(path).expect(READ_ERROR);
     let mut lines = BufReader::new(file).lines();
 
     for p in 0..44 {
@@ -239,7 +255,9 @@ impl Train {
 
   fn load_stop_1_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/start1.";
-    let file = File::open(P1FILENAME).expect(READ_ERROR);
+    let mut path = get_executable_path();
+    path.push(P1FILENAME);
+    let file = File::open(path).expect(READ_ERROR);
     let mut lines = BufReader::new(file).lines();
 
     for p in 0..44 {
@@ -364,6 +382,18 @@ pub fn get_prob_from_cg(hmm: &mut HMM, train: &Train, seq: &String) -> usize {
 /*
 HELPERS
 */
+
+pub fn get_executable_path() -> PathBuf{
+  let path = match env::current_exe() {
+    Ok(mut path) => {
+        path.pop();
+        path
+    }
+    Err(_) => panic!("[Error] Current executable path does not exist"),
+  };
+  path
+}
+
 
 /**
  * Converts a nucleotide character to an integer
@@ -502,21 +532,9 @@ pub fn get_rc_dna_indel(dna: &Vec<char>) -> Vec<char> {
   result
 }
 
-fn strlen(s: &Vec<char>) -> usize {
-  // TODO: cleanup
-  let mut result = 0;
-  for c in s.iter() {
-    if *c != '\0' {
-      result += 1;
-    } else {
-      break;
-    }
-  }
-  result
-}
-
-pub fn get_protein(protein: &mut Vec<char>, dna: &Vec<char>, strand: bool, wholegenome: bool) {
-  let len = strlen(dna);
+pub fn get_protein(dna: &Vec<char>, strand: bool, wholegenome: bool) -> Vec<char> {
+  let len = dna.len();
+  let mut protein = vec!['\0'; len/3];
 
   if strand {
     for i in (0..len).step_by(3) {
@@ -539,11 +557,11 @@ pub fn get_protein(protein: &mut Vec<char>, dna: &Vec<char>, strand: bool, whole
   }
   */
   if protein[len / 3 - 1] == '*' {
-    protein[len / 3 - 1] = '\0';
+    protein.pop();
   }
 
   if wholegenome {
-    return; //short reads, skip
+    return protein; //short reads, skip
   }
 
   if strand {
@@ -557,4 +575,5 @@ pub fn get_protein(protein: &mut Vec<char>, dna: &Vec<char>, strand: bool, whole
       protein[0] = 'M';
     }
   }
+  protein
 }

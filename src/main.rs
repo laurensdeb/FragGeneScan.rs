@@ -1,9 +1,10 @@
 use bio::io::fasta;
+use std::fs::File;
 use std::io::{self, Write};
 use std::path::Path;
 mod types;
 use self::types::train::{get_prob_from_cg, Train, HMM};
-use self::types::viterbi::{viterbi, Output};
+use self::types::viterbi::{viterbi, Prediction};
 use clap::{App, Arg};
 use rayon::prelude::*;
 
@@ -28,7 +29,6 @@ fn main() {
                 .value_name("NUM_THREADS")
                 .help("How many threads should the program use.")
                 .takes_value(true)
-                .default_value("1")
         )
         .arg(
             Arg::with_name("train")
@@ -87,21 +87,25 @@ fn main() {
     /*
     Process the -p parameter
     */
-    let threadnum: usize = matches
-        .value_of("threads")
-        .unwrap()
-        .parse()
-        .expect("ERROR: The parameter -p should have a numeric value.");
-    if threadnum < 1 {
-        println!("ERROR: Invalid number of threads");
-        return;
+    if matches.is_present("threads") {
+        let threadnum: usize = matches
+            .value_of("threads")
+            .unwrap()
+            .parse()
+            .expect("ERROR: The parameter -p should have a numeric value.");
+        if threadnum < 1 {
+            println!("ERROR: Invalid number of threads");
+            return;
+        }
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(threadnum)
+            .build_global()
+            .unwrap();
     }
-    rayon::ThreadPoolBuilder::new().num_threads(threadnum).build_global().unwrap();
 
     /*
      * Next we should read the fasta sequences from STDIN, start our threads and do some work
      */
-    let format = false;
     let records: Vec<(String, String)> = fasta::Reader::new(io::stdin())
         .records()
         .map(|result| {
@@ -111,33 +115,137 @@ fn main() {
             let id = String::from(record.id());
             (id, seq)
         })
+        .filter(|(_, seq)| seq.len() > 70)
         .collect();
 
-    let outputs: Vec<Output> = records
+    let predictions: Vec<Prediction> = records
         .into_par_iter()
         .map(|(header, sequence)| {
             let mut local_hmm = hmm.clone();
             let cg = get_prob_from_cg(&mut local_hmm, &train, &sequence);
-            viterbi(
-                &local_hmm,
-                &train,
-                &sequence,
-                wholegenome,
-                cg,
-                format,
-                &header,
-            )
+            viterbi(&local_hmm, &train, &sequence, wholegenome, cg, &header)
         })
         .collect();
 
     /*
      * Join all of the work of these threads
      */
-    // TODO: metadata files
-    let out = io::stdout();
-    let mut handle = out.lock();
-    outputs.into_iter().for_each(|output| {
-        write!(handle, "{}", output.aa);
+
+    let mut metadata_output: Option<File> = None;
+    if matches.is_present("metadata") {
+        metadata_output = Some(create_file_if_not_exists(
+            matches
+                .value_of("metadata")
+                .unwrap()
+        ));
+    }
+
+    let mut dna_output: Option<File> = None;
+    if matches.is_present("output") {
+        dna_output = Some(create_file_if_not_exists(
+            matches
+                .value_of("output")
+                .unwrap()
+        ));
+    }
+
+    predictions.into_iter().for_each(|prediction| {
+        // TODO: write to OUT if parameter is present
+        // TODO: write to DNA if parameter is present
+        if metadata_output.is_some() {
+            writeln!(metadata_output.as_ref().unwrap(), "{}", prediction.head);
+        }
+        for out in prediction.outs {
+            print_aa(
+                &prediction.head,
+                out.dna_start_t,
+                out.dna_end_t,
+                out.forward,
+                &out.protein,
+            );
+            if metadata_output.is_some() {
+                print_metadata(
+                    metadata_output.as_mut().unwrap(),
+                    out.dna_start_t,
+                    out.dna_end_t,
+                    out.frame,
+                    out.final_score,
+                    out.insert,
+                    out.delete,
+                );
+            }
+            if dna_output.is_some() {
+                print_dna_metadata(
+                    dna_output.as_mut().unwrap(),
+                    &prediction.head,
+                    out.dna_start_t,
+                    out.dna_end_t,
+                    out.forward,
+                    &out.dna,
+                );
+            }
+        }
     });
-    drop(handle);
+}
+
+fn print_aa(head: &String, start_t: usize, end_t: usize, forward: bool, protein: &String) {
+    println!(
+        ">{}_{}_{}_{}",
+        head,
+        start_t,
+        end_t,
+        forward_to_chr(forward)
+    );
+    println!("{}", protein);
+}
+fn print_dna_metadata(dna_output: &mut File, head: &String, start_t: usize, end_t: usize, forward: bool, dna: &String) {
+    writeln!(dna_output,
+        ">{}_{}_{}_{}",
+        head,
+        start_t,
+        end_t,
+        forward_to_chr(forward)
+    );
+    writeln!(dna_output, "{}", dna);
+}
+fn print_metadata(
+    out: &mut File,
+    start_t: usize,
+    end_t: usize,
+    frame: usize,
+    final_score: f64,
+    insert: Vec<usize>,
+    delete: Vec<usize>,
+) {
+    write!(
+        out,
+        "{}\t{}\t+\t{}\t{}\t",
+        start_t, end_t, frame, final_score
+    );
+    write!(out, "I:");
+    for i in insert {
+        write!(out, "{},", i);
+    }
+    write!(out, "\tD:");
+    for d in delete {
+        write!(out, "{},", d);
+    }
+    write!(out, "\n");
+}
+
+fn forward_to_chr(forward: bool) -> char {
+    match forward {
+        true => '+',
+        false => '-',
+    }
+}
+
+fn create_file_if_not_exists(path: &str) -> File {
+    match Path::new(path).exists() {
+        true => File::open(
+            path
+        )
+        .expect("Error: unable to open output file"),
+        false => File::create(path).expect("Error: unable to create output file")
+    }
 }
