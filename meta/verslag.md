@@ -1,0 +1,3 @@
+ - Uitvoermethode werd aangepast
+ - Gebruik van Rayon voor parallelisatie
+ - Opkuisen van ongebruikte format parameter 

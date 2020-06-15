@@ -1,8 +1,8 @@
+use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::PathBuf;
 use whiteread::parse_string;
-use std::env;
 
 const MFILENAME: &'static str = "train/gene";
 const M1FILENAME: &'static str = "train/rgene";
@@ -382,17 +382,16 @@ pub fn get_prob_from_cg(hmm: &mut HMM, train: &Train, seq: &String) -> usize {
 HELPERS
 */
 
-pub fn get_executable_path() -> PathBuf{
+pub fn get_executable_path() -> PathBuf {
   let path = match env::current_exe() {
     Ok(mut path) => {
-        path.pop();
-        path
+      path.pop();
+      path
     }
     Err(_) => panic!("[Error] Current executable path does not exist"),
   };
   path
 }
-
 
 /**
  * Converts a nucleotide character to an integer
@@ -508,7 +507,7 @@ pub fn get_rc_dna(dna: &Vec<char>) -> Vec<char> {
 
 pub fn get_protein(dna: &Vec<char>, strand: bool, wholegenome: bool) -> Vec<char> {
   let len = dna.len();
-  let mut protein = vec!['\0'; len/3];
+  let mut protein = vec!['\0'; len / 3];
 
   if strand {
     for i in (0..len).step_by(3) {

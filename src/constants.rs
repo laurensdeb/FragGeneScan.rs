@@ -1,7 +1,7 @@
-pub const NUM_STATE: usize =  29;
+pub const NUM_STATE: usize = 29;
 
 pub const NOSTATE: i8 = -1;
-pub const S_STATE: usize =  0;
+pub const S_STATE: usize = 0;
 pub const E_STATE: usize = 1;
 pub const R_STATE: usize = 2;
 pub const S_STATE_1: usize = 3;
@@ -22,7 +22,6 @@ pub const I1_STATE: usize = 17;
 pub const I6_STATE: usize = 22;
 pub const I1_STATE_1: usize = 23;
 pub const I6_STATE_1: usize = 28;
-
 
 pub const TR_MM: usize = 0;
 pub const TR_MI: usize = 1;

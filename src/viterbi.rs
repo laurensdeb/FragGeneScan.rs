@@ -1,11 +1,11 @@
 use super::constants::*;
 use super::train::{get_protein, get_rc_dna, nt2int, trinucleotide, Train, HMM};
-use std::convert::TryInto;
 use rayon::prelude::*;
+use std::convert::TryInto;
 
 pub struct Prediction {
 	pub head: String,
-	pub outs: Vec<Out>
+	pub outs: Vec<Out>,
 }
 
 pub struct Out {
@@ -19,10 +19,8 @@ pub struct Out {
 	pub protein: String,
 	pub dna: String,
 
-	pub forward: bool
+	pub forward: bool,
 }
-
-
 
 pub fn viterbi(
 	hmm: &HMM,
@@ -71,9 +69,12 @@ pub fn viterbi(
 
 	/* stop state */
 	if (sequence[0] == 'T' || sequence[0] == 't')
-		&& (((sequence[1] == 'A' || sequence[1] == 'a') && (sequence[2] == 'A' || sequence[2] == 'a'))
-			|| ((sequence[1] == 'A' || sequence[1] == 'a') && (sequence[2] == 'G' || sequence[2] == 'g'))
-			|| ((sequence[1] == 'G' || sequence[1] == 'g') && (sequence[2] == 'A' || sequence[2] == 'a')))
+		&& (((sequence[1] == 'A' || sequence[1] == 'a')
+			&& (sequence[2] == 'A' || sequence[2] == 'a'))
+			|| ((sequence[1] == 'A' || sequence[1] == 'a')
+				&& (sequence[2] == 'G' || sequence[2] == 'g'))
+			|| ((sequence[1] == 'G' || sequence[1] == 'g')
+				&& (sequence[2] == 'A' || sequence[2] == 'a')))
 	// TODO: this needs to be a lot cleaner!
 	{
 		alpha[E_STATE][0] = max_dbl;
@@ -88,19 +89,27 @@ pub fn viterbi(
 		alpha[M2_STATE][1] = max_dbl;
 		alpha[M1_STATE][0] = max_dbl;
 
-		if (sequence[1] == 'A' || sequence[1] == 'a') && (sequence[2] == 'A' || sequence[2] == 'a') {
+		if (sequence[1] == 'A' || sequence[1] == 'a') && (sequence[2] == 'A' || sequence[2] == 'a')
+		{
 			alpha[E_STATE][2] = alpha[E_STATE][2] - log53;
-		} else if (sequence[1] == 'A' || sequence[1] == 'a') && (sequence[2] == 'G' || sequence[2] == 'g') {
+		} else if (sequence[1] == 'A' || sequence[1] == 'a')
+			&& (sequence[2] == 'G' || sequence[2] == 'g')
+		{
 			alpha[E_STATE][2] = alpha[E_STATE][2] - log16;
-		} else if (sequence[1] == 'G' || sequence[1] == 'g') && (sequence[2] == 'A' || sequence[2] == 'a') {
+		} else if (sequence[1] == 'G' || sequence[1] == 'g')
+			&& (sequence[2] == 'A' || sequence[2] == 'a')
+		{
 			alpha[E_STATE][2] = alpha[E_STATE][2] - log30;
 		}
 	}
 
 	if (sequence[2] == 'A' || sequence[2] == 'a')
-		&& (((sequence[0] == 'T' || sequence[0] == 't') && (sequence[1] == 'T' || sequence[1] == 't'))
-			|| ((sequence[0] == 'C' || sequence[0] == 'c') && (sequence[1] == 'T' || sequence[1] == 't'))
-			|| ((sequence[0] == 'T' || sequence[0] == 't') && (sequence[1] == 'C' || sequence[1] == 'c')))
+		&& (((sequence[0] == 'T' || sequence[0] == 't')
+			&& (sequence[1] == 'T' || sequence[1] == 't'))
+			|| ((sequence[0] == 'C' || sequence[0] == 'c')
+				&& (sequence[1] == 'T' || sequence[1] == 't'))
+			|| ((sequence[0] == 'T' || sequence[0] == 't')
+				&& (sequence[1] == 'C' || sequence[1] == 'c')))
 	{
 		alpha[S_STATE_1][0] = max_dbl;
 		alpha[S_STATE_1][1] = max_dbl;
@@ -111,11 +120,16 @@ pub fn viterbi(
 		alpha[M3_STATE_1][2] = max_dbl;
 		alpha[M6_STATE_1][2] = max_dbl;
 
-		if (sequence[0] == 'T' || sequence[0] == 't') && (sequence[1] == 'T' || sequence[1] == 't') {
+		if (sequence[0] == 'T' || sequence[0] == 't') && (sequence[1] == 'T' || sequence[1] == 't')
+		{
 			alpha[S_STATE_1][2] = alpha[S_STATE_1][2] - log53;
-		} else if (sequence[0] == 'C' || sequence[0] == 'c') && (sequence[1] == 'T' || sequence[1] == 't') {
+		} else if (sequence[0] == 'C' || sequence[0] == 'c')
+			&& (sequence[1] == 'T' || sequence[1] == 't')
+		{
 			alpha[S_STATE_1][2] = alpha[S_STATE_1][2] - log16;
-		} else if (sequence[0] == 'T' || sequence[0] == 't') && (sequence[1] == 'C' || sequence[1] == 'c') {
+		} else if (sequence[0] == 'T' || sequence[0] == 't')
+			&& (sequence[1] == 'C' || sequence[1] == 'c')
+		{
 			alpha[S_STATE_1][2] = alpha[S_STATE_1][2] - log30;
 		}
 	}
@@ -233,21 +247,27 @@ pub fn viterbi(
 					/* to avoid stop codon */
 					if t < 2 {
 					} else if (i == M2_STATE || i == M5_STATE)
-						&& (sequence[temp_i[j - I1_STATE]] == 'T' || sequence[temp_i[j - I1_STATE]] == 't')
+						&& (sequence[temp_i[j - I1_STATE]] == 'T'
+							|| sequence[temp_i[j - I1_STATE]] == 't')
 						&& t < len_seq - 1 && (((sequence[t] == 'A' || sequence[t] == 'a')
 						&& (sequence[t + 1] == 'A' || sequence[t + 1] == 'a'))
-						|| ((sequence[t] == 'A' || sequence[t] == 'a') && (sequence[t + 1] == 'G' || sequence[t + 1] == 'g'))
-						|| ((sequence[t] == 'G' || sequence[t] == 'g') && (sequence[t + 1] == 'A' || sequence[t + 1] == 'a')))
+						|| ((sequence[t] == 'A' || sequence[t] == 'a')
+							&& (sequence[t + 1] == 'G' || sequence[t + 1] == 'g'))
+						|| ((sequence[t] == 'G' || sequence[t] == 'g')
+							&& (sequence[t + 1] == 'A' || sequence[t + 1] == 'a')))
 					{
 					} else if (i == M3_STATE || i == M6_STATE)
 						&& temp_i[j - I1_STATE] as isize - 1 > 0
 						&& (sequence[temp_i[j - I1_STATE] - 1] == 'T'
 							|| sequence[temp_i[j - I1_STATE] - 1] == 't')
-						&& (((sequence[temp_i[j - I1_STATE]] == 'A' || sequence[temp_i[j - I1_STATE]] == 'a')
+						&& (((sequence[temp_i[j - I1_STATE]] == 'A'
+							|| sequence[temp_i[j - I1_STATE]] == 'a')
 							&& (sequence[t] == 'A' || sequence[t] == 'a'))
-							|| ((sequence[temp_i[j - I1_STATE]] == 'A' || sequence[temp_i[j - I1_STATE]] == 'a')
+							|| ((sequence[temp_i[j - I1_STATE]] == 'A'
+								|| sequence[temp_i[j - I1_STATE]] == 'a')
 								&& (sequence[t] == 'G' || sequence[t] == 'g'))
-							|| ((sequence[temp_i[j - I1_STATE]] == 'G' || sequence[temp_i[j - I1_STATE]] == 'g')
+							|| ((sequence[temp_i[j - I1_STATE]] == 'G'
+								|| sequence[temp_i[j - I1_STATE]] == 'g')
 								&& (sequence[t] == 'A' || sequence[t] == 'a')))
 					{
 					} else {
@@ -485,7 +505,8 @@ pub fn viterbi(
 
 			if t < len_seq - 2
 				&& (sequence[t] == 'T' || sequence[t] == 't')
-				&& (((sequence[t + 1] == 'A' || sequence[t + 1] == 'a') && (sequence[t + 2] == 'A' || sequence[t + 2] == 'a'))
+				&& (((sequence[t + 1] == 'A' || sequence[t + 1] == 'a')
+					&& (sequence[t + 2] == 'A' || sequence[t + 2] == 'a'))
 					|| ((sequence[t + 1] == 'A' || sequence[t + 1] == 'a')
 						&& (sequence[t + 2] == 'G' || sequence[t + 2] == 'g'))
 					|| ((sequence[t + 1] == 'G' || sequence[t + 1] == 'g')
@@ -518,7 +539,9 @@ pub fn viterbi(
 				alpha[M2_STATE][t + 1] = max_dbl;
 				alpha[M1_STATE][t] = max_dbl;
 
-				if (sequence[t + 1] == 'A' || sequence[t + 1] == 'a') && (sequence[t + 2] == 'A' || sequence[t + 2] == 'a') {
+				if (sequence[t + 1] == 'A' || sequence[t + 1] == 'a')
+					&& (sequence[t + 2] == 'A' || sequence[t + 2] == 'a')
+				{
 					alpha[E_STATE][t + 2] = alpha[E_STATE][t + 2] - log54;
 				} else if (sequence[t + 1] == 'A' || sequence[t + 1] == 'a')
 					&& (sequence[t + 2] == 'G' || sequence[t + 2] == 'g')
@@ -594,9 +617,12 @@ pub fn viterbi(
 
 			if t < len_seq - 2
 				&& (sequence[t + 2] == 'A' || sequence[t + 2] == 'a')
-				&& (((sequence[t] == 'T' || sequence[t] == 't') && (sequence[t + 1] == 'T' || sequence[t + 1] == 't'))
-					|| ((sequence[t] == 'C' || sequence[t] == 'c') && (sequence[t + 1] == 'T' || sequence[t + 1] == 't'))
-					|| ((sequence[t] == 'T' || sequence[t] == 't') && (sequence[t + 1] == 'C' || sequence[t + 1] == 'c')))
+				&& (((sequence[t] == 'T' || sequence[t] == 't')
+					&& (sequence[t + 1] == 'T' || sequence[t + 1] == 't'))
+					|| ((sequence[t] == 'C' || sequence[t] == 'c')
+						&& (sequence[t + 1] == 'T' || sequence[t + 1] == 't'))
+					|| ((sequence[t] == 'T' || sequence[t] == 't')
+						&& (sequence[t + 1] == 'C' || sequence[t + 1] == 'c')))
 			{
 				alpha[S_STATE_1][t] = max_dbl;
 				path[S_STATE_1][t] = R_STATE as i8;
@@ -620,11 +646,17 @@ pub fn viterbi(
 				alpha[M3_STATE_1][t + 2] = max_dbl;
 				alpha[M6_STATE_1][t + 2] = max_dbl;
 
-				if (sequence[t] == 'T' || sequence[t] == 't') && (sequence[t + 1] == 'T' || sequence[t + 1] == 't') {
+				if (sequence[t] == 'T' || sequence[t] == 't')
+					&& (sequence[t + 1] == 'T' || sequence[t + 1] == 't')
+				{
 					alpha[S_STATE_1][t + 2] = alpha[S_STATE_1][t + 2] - log54;
-				} else if (sequence[t] == 'C' || sequence[t] == 'c') && (sequence[t + 1] == 'T' || sequence[t + 1] == 't') {
+				} else if (sequence[t] == 'C' || sequence[t] == 'c')
+					&& (sequence[t + 1] == 'T' || sequence[t + 1] == 't')
+				{
 					alpha[S_STATE_1][t + 2] = alpha[S_STATE_1][t + 2] - log16;
-				} else if (sequence[t] == 'T' || sequence[t] == 't') && (sequence[t + 1] == 'C' || sequence[t + 1] == 'c') {
+				} else if (sequence[t] == 'T' || sequence[t] == 't')
+					&& (sequence[t + 1] == 'C' || sequence[t + 1] == 'c')
+				{
 					alpha[S_STATE_1][t + 2] = alpha[S_STATE_1][t + 2] - log30;
 				}
 
@@ -632,8 +664,11 @@ pub fn viterbi(
 				let mut start_freq = 0.0;
 				for i in 3..=60 {
 					if t + i + 2 < len_seq {
-						start_freq -= hmm.tr_s_1[i - 3]
-							[trinucleotide(&sequence[t + i], &sequence[t + i + 1], &sequence[t + i + 2])];
+						start_freq -= hmm.tr_s_1[i - 3][trinucleotide(
+							&sequence[t + i],
+							&sequence[t + i + 1],
+							&sequence[t + i + 2],
+						)];
 					}
 				}
 				let h_kd = hmm.s1_dist[2]
@@ -837,7 +872,10 @@ pub fn viterbi(
 	/* backtrack array to find the optimal path                */
 	/***********************************************************/
 
-	let mut prediction = Prediction { head: head.to_string(), outs: Vec::new()};
+	let mut prediction = Prediction {
+		head: head.to_string(),
+		outs: Vec::new(),
+	};
 
 	/* find the state for sequence[N] with the highest probability */
 	let mut prob = f64::INFINITY;
@@ -895,12 +933,9 @@ pub fn viterbi(
 				|| vpath[t] == M1_STATE_1
 				|| vpath[t] == M4_STATE_1)
 		{
+			insert.par_iter_mut().for_each(|p| *p = 0);
 
-			insert.par_iter_mut()
-			.for_each(|p| *p = 0);
-
-			delete.par_iter_mut()
-			.for_each(|p| *p = 0);
+			delete.par_iter_mut().for_each(|p| *p = 0);
 
 			insert_id = 0;
 			delete_id = 0;
@@ -1000,7 +1035,12 @@ pub fn viterbi(
 							}
 							s += 3;
 							codon[0] = '\0';
-							strncpy(&mut codon, sequence, (start_old - 1 - s).try_into().unwrap(), 3);
+							strncpy(
+								&mut codon,
+								sequence,
+								(start_old - 1 - s).try_into().unwrap(),
+								3,
+							);
 							codon[3] = '\0';
 							c = codon[0..3].iter().collect::<String>();
 						}
@@ -1018,19 +1058,20 @@ pub fn viterbi(
 						wholegenome,
 					);
 
-					let mut out = Out { dna_start_t: dna_start_t,
-									dna_end_t: dna_end_t,
-									frame: frame,
-									final_score: final_score,
-									insert: Vec::new(),
-									delete: Vec::new(),
-									protein: protein.iter().collect::<String>(),
-									forward: true,
-									dna: sequence[dna_start_t - 1..dna_end_t]
-									.to_vec()
-									.iter()
-									.collect::<String>()
-								};
+					let mut out = Out {
+						dna_start_t: dna_start_t,
+						dna_end_t: dna_end_t,
+						frame: frame,
+						final_score: final_score,
+						insert: Vec::new(),
+						delete: Vec::new(),
+						protein: protein.iter().collect::<String>(),
+						forward: true,
+						dna: sequence[dna_start_t - 1..dna_end_t]
+							.to_vec()
+							.iter()
+							.collect::<String>(),
+					};
 
 					for i in 0..insert_id {
 						out.insert.push(insert[i])
@@ -1095,9 +1136,11 @@ pub fn viterbi(
 						wholegenome,
 					); //YY July 18, 2018, introduce adjust
 
-					let dna1_out = get_rc_dna(&sequence[dna_start_t_withstop - 1..dna_end_t].to_vec());
+					let dna1_out =
+						get_rc_dna(&sequence[dna_start_t_withstop - 1..dna_end_t].to_vec());
 
-					let mut out = Out { dna_start_t: dna_start_t_withstop,
+					let mut out = Out {
+						dna_start_t: dna_start_t_withstop,
 						dna_end_t: dna_end_t,
 						frame: frame,
 						final_score: final_score,
@@ -1105,7 +1148,7 @@ pub fn viterbi(
 						delete: Vec::new(),
 						protein: protein.iter().collect::<String>(),
 						forward: false,
-						dna: dna1_out.iter().collect::<String>()
+						dna: dna1_out.iter().collect::<String>(),
 					};
 
 					for i in 0..insert_id {

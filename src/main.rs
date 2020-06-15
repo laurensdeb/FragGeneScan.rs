@@ -1,15 +1,15 @@
+mod constants;
 mod train;
 mod viterbi;
-mod constants;
 
 use bio::io::fasta;
+use clap::{App, Arg};
+use rayon::prelude::*;
 use std::fs::File;
 use std::io::{self, Write};
 use std::path::Path;
 use train::{get_prob_from_cg, Train, HMM};
 use viterbi::{viterbi, Prediction};
-use clap::{App, Arg};
-use rayon::prelude::*;
 
 fn main() {
     let matches = App::new("FragGeneScan.Rs")
@@ -137,18 +137,14 @@ fn main() {
     let mut metadata_output: Option<File> = None;
     if matches.is_present("metadata") {
         metadata_output = Some(create_file_if_not_exists(
-            matches
-                .value_of("metadata")
-                .unwrap()
+            matches.value_of("metadata").unwrap(),
         ));
     }
 
     let mut dna_output: Option<File> = None;
     if matches.is_present("output") {
         dna_output = Some(create_file_if_not_exists(
-            matches
-                .value_of("output")
-                .unwrap()
+            matches.value_of("output").unwrap(),
         ));
     }
 
@@ -156,7 +152,10 @@ fn main() {
         // TODO: write to OUT if parameter is present
         // TODO: write to DNA if parameter is present
         if metadata_output.is_some() {
-            write_data(metadata_output.as_mut().unwrap(), format!("{}", prediction.head));
+            write_data(
+                metadata_output.as_mut().unwrap(),
+                format!("{}", prediction.head),
+            );
         }
         for out in prediction.outs {
             print_aa(
@@ -201,13 +200,23 @@ fn print_aa(head: &String, start_t: usize, end_t: usize, forward: bool, protein:
     );
     println!("{}", protein);
 }
-fn print_dna_metadata(dna_output: &mut File, head: &String, start_t: usize, end_t: usize, forward: bool, dna: &String) {
-    write_data(dna_output,
-        format!(">{}_{}_{}_{}\n",
-        head,
-        start_t,
-        end_t,
-        forward_to_chr(forward))
+fn print_dna_metadata(
+    dna_output: &mut File,
+    head: &String,
+    start_t: usize,
+    end_t: usize,
+    forward: bool,
+    dna: &String,
+) {
+    write_data(
+        dna_output,
+        format!(
+            ">{}_{}_{}_{}\n",
+            head,
+            start_t,
+            end_t,
+            forward_to_chr(forward)
+        ),
     );
     write_data(dna_output, format!("{}", dna));
 }
@@ -222,8 +231,7 @@ fn print_metadata(
 ) {
     write_data(
         out,
-        format!("{}\t{}\t+\t{}\t{}\t",
-        start_t, end_t, frame, final_score)
+        format!("{}\t{}\t+\t{}\t{}\t", start_t, end_t, frame, final_score),
     );
     write_data(out, String::from("I:"));
     for i in insert {
@@ -245,17 +253,14 @@ fn forward_to_chr(forward: bool) -> char {
 
 fn create_file_if_not_exists(path: &str) -> File {
     match Path::new(path).exists() {
-        true => File::open(
-            path
-        )
-        .expect("Error: unable to open output file"),
-        false => File::create(path).expect("Error: unable to create output file")
+        true => File::open(path).expect("Error: unable to open output file"),
+        false => File::create(path).expect("Error: unable to create output file"),
     }
 }
 
-fn write_data(output: &mut File, data: String){
+fn write_data(output: &mut File, data: String) {
     match write!(output, "{}", data) {
         Err(e) => println!("Error: {:?}", e),
-        _ => ()
+        _ => (),
     }
 }
