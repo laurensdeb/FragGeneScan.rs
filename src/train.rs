@@ -1,8 +1,7 @@
-use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
 use whiteread::parse_string;
+use super::helpers::{get_executable_path};
 
 const MFILENAME: &'static str = "train/gene";
 const M1FILENAME: &'static str = "train/rgene";
@@ -375,22 +374,6 @@ pub fn get_prob_from_cg(hmm: &mut HMM, train: &Train, seq: &String) -> usize {
   hmm.s1_dist = train.s1_dist[cg_count].clone();
   hmm.e1_dist = train.e1_dist[cg_count].clone();
   cg_count
-}
-
-// TODO: move these helpers to separate file.
-/*
-HELPERS
-*/
-
-pub fn get_executable_path() -> PathBuf {
-  let path = match env::current_exe() {
-    Ok(mut path) => {
-      path.pop();
-      path
-    }
-    Err(_) => panic!("[Error] Current executable path does not exist"),
-  };
-  path
 }
 
 /**
