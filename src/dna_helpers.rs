@@ -187,11 +187,10 @@ pub fn get_protein(dna: &Vec<char>, strand: bool, wholegenome: bool) -> Vec<char
     let len = dna.len();
     let mut protein = vec!['\0'; len / 3];
     if strand {
-        for i in (0..len).step_by(3) {
-            if i / 3 < len / 3 {
-                protein[i / 3] = CODON_CODE[trinucleotide_pep(&dna[i], &dna[i + 1], &dna[i + 2])];
-            }
-        }
+        protein.par_iter_mut().enumerate().for_each(|(i, p)| {
+            let i = i * 3;
+            *p = CODON_CODE[trinucleotide_pep(&dna[i], &dna[i + 1], &dna[i + 2])]
+        })
     } else {
         for i in (0..len).step_by(3) {
             if (len - i) / 3 > 0 {

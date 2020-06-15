@@ -78,9 +78,10 @@ pub fn viterbi(
 	let mut path: Vec<Vec<i8>> = vec![vec![0; len_seq]; NUM_STATE];
 	let mut vpath = vec![0; len_seq];
 
-	for i in 0..NUM_STATE {
-		alpha[i][0] = -1.0 * hmm.initial_state[i];
-	}
+	alpha.par_iter_mut().enumerate().for_each(|(i, alpha)| {
+		// This uses the closure parameter instead.
+		alpha[0] = -1.0 * hmm.initial_state[i];
+	});
 
 	let sequence: &Vec<char> = &sequence.chars().collect();
 
@@ -576,29 +577,38 @@ pub fn viterbi(
 
 				if t >= 60 {
 					/* bug reported by Yu-Wei */
-					for i in (3..=60).rev() {
-						let i = -(i as isize);
-						if (t as isize) + i + 2 < len_seq as isize {
-							let idx: usize = (i + 60) as usize;
-							start_freq -= hmm.tr_e[idx][trinucleotide(
-								&sequence[(t as isize + i) as usize],
-								&sequence[(t as isize + i + 1) as usize],
-								&sequence[(t as isize + i + 2) as usize],
-							)];
-						}
-					}
+					start_freq -= (3..=60)
+						.map(|i| {
+							let i = -(i as isize);
+							let mut result = 0.0;
+							if (t as isize) + i + 2 < len_seq as isize {
+								let idx: usize = (i + 60) as usize;
+								result = hmm.tr_e[idx][trinucleotide(
+									&sequence[(t as isize + i) as usize],
+									&sequence[(t as isize + i + 1) as usize],
+									&sequence[(t as isize + i + 2) as usize],
+								)];
+							}
+							result
+						})
+						.sum::<f64>();
 				} else {
-					for i in (3..=t).rev() {
-						let i = -(i as isize);
-						if t as isize + i + 2 < len_seq as isize {
-							let idx: usize = (i + 60) as usize;
-							sub_sum += hmm.tr_e[idx][trinucleotide(
-								&sequence[(t as isize + i) as usize],
-								&sequence[(t as isize + i + 1) as usize],
-								&sequence[(t as isize + i + 2) as usize],
-							)];
-						}
-					}
+					sub_sum += (3..=t)
+						.map(|i| {
+							let i = -(i as isize);
+							let mut result = 0.0;
+							if t as isize + i + 2 < len_seq as isize {
+								let idx: usize = (i + 60) as usize;
+								result = hmm.tr_e[idx][trinucleotide(
+									&sequence[(t as isize + i) as usize],
+									&sequence[(t as isize + i + 1) as usize],
+									&sequence[(t as isize + i + 2) as usize],
+								)];
+							}
+							result
+						})
+						.sum::<f64>();
+
 					sub_sum = sub_sum * 58.0 / (-3.0 + t as f64 + 1.0);
 					start_freq -= sub_sum;
 				}
@@ -674,15 +684,20 @@ pub fn viterbi(
 
 				/* adjustment based on probability distribution */
 				let mut start_freq = 0.0;
-				for i in 3..=60 {
-					if t + i + 2 < len_seq {
-						start_freq -= hmm.tr_s_1[i - 3][trinucleotide(
-							&sequence[t + i],
-							&sequence[t + i + 1],
-							&sequence[t + i + 2],
-						)];
-					}
-				}
+				start_freq -= (3..=60)
+					.map(|i: i32| {
+						let i = i as usize;
+						let mut result: f64 = 0.0;
+						if t + i + 2 < len_seq {
+							result = hmm.tr_s_1[i - 3][trinucleotide(
+								&sequence[t + i],
+								&sequence[t + i + 1],
+								&sequence[t + i + 2],
+							)];
+						}
+						result
+					})
+					.sum::<f64>();
 				let h_kd = hmm.s1_dist[2]
 					* (-1.0 * (start_freq - hmm.s1_dist[1]).powi(2)
 						/ (2.0 * hmm.s1_dist[0].powi(2)))
@@ -871,12 +886,16 @@ pub fn viterbi(
 			}
 		}
 		if num_n > 9 {
-			for i in 0..NUM_STATE {
-				if i != R_STATE {
-					alpha[i][t] = max_dbl;
-					path[i][t] = R_STATE as i8;
-				}
-			}
+			alpha
+				.par_iter_mut()
+				.zip(path.par_iter_mut())
+				.enumerate()
+				.for_each(|(i, (alpha, path))| {
+					if i != R_STATE {
+						alpha[t] = max_dbl;
+						path[t] = R_STATE as i8;
+					}
+				});
 		}
 	}
 
@@ -1029,12 +1048,13 @@ pub fn viterbi(
 								);
 								utr[63] = '\0';
 								//printf("check s=%d, codon %s\n", s, codon);
-								let mut freq_sum = 0.0;
-								for j in 0..(strlen(&utr.iter().collect()) - 2) {
-									let idx = trinucleotide(&utr[j], &utr[j + 1], &utr[j + 2]);
-									freq_sum -= train.start[cg][j][idx];
-									//printf("j=%d, key=%c%c%c %d, start %lf\n", j, utr[j], utr[j+1], utr[j+2], idx, train_ptr->start[cg][j][idx]);
-								}
+								let freq_sum = -(0..(strlen(&utr.iter().collect()) - 2))
+									.into_par_iter()
+									.map(|j| {
+										let idx = trinucleotide(&utr[j], &utr[j + 1], &utr[j + 2]);
+										train.start[cg][j][idx]
+									})
+									.sum::<f64>();
 								if s == 0 {
 									e_save = freq_sum;
 									s_save = 0;
@@ -1113,12 +1133,13 @@ pub fn viterbi(
 								strncpy(&mut utr, sequence, (end_old - 3 + s - 30) as usize, 63);
 								utr[63] = '\0';
 								//printf("check s=%d, codon %s\n", s, codon);
-								let mut freq_sum = 0.0;
-								for j in 0..strlen(&utr.iter().collect()) - 2 {
+								let freq_sum = -(0..(strlen(&utr.iter().collect()) - 2))
+								.into_par_iter()
+								.map(|j| {
 									let idx = trinucleotide(&utr[j], &utr[j + 1], &utr[j + 2]);
-									freq_sum -= train.stop1[cg][j][idx]; //stop1?? Ye, April 18, 2016
-									 //printf("j=%d, key=%c%c%c %d, stop1 %lf\n", j, utr[j], utr[j+1], utr[j+2], idx, train_ptr->stop1[cg][j][idx]);
-								}
+									train.stop1[cg][j][idx]
+								})
+								.sum::<f64>();
 								if s == 0 {
 									e_save = freq_sum;
 									s_save = s;
