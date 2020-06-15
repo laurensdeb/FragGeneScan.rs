@@ -1,22 +1,32 @@
 mod constants;
-mod train;
-mod viterbi;
+mod dna_helpers;
 mod helpers;
 mod output;
+mod train;
+mod viterbi;
 
 use bio::io::fasta;
 use clap::{App, Arg};
+use dna_helpers::get_prob_from_cg;
+use helpers::create_file_if_not_exists;
+use output::print_prediction;
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::{self};
 use std::path::Path;
-use train::{get_prob_from_cg, Train, HMM};
+use train::{Train, HMM};
 use viterbi::{viterbi, Prediction};
-use output::{print_prediction};
-use helpers::{create_file_if_not_exists};
+
+/**
+ * main.rs
+ * =======
+ * This file contains the main method used for calling the viterbi function from the command line
+ * and processing the output.
+ */
 
 fn main() {
-    let matches = App::new("FragGeneScan.Rs")
+    // We use clap to process command line arguments
+    let matches = App::new("fgsrs")
         .version("1.0")
         .author("Laurens Debackere <Laurens.Debackere@UGent.be>")
         .about("A reimplementation of the original FragGeneScan project (see https://omics.informatics.indiana.edu/FragGeneScan/) in Rust with an improved command-line interface, better performance and code quality.")
@@ -111,7 +121,7 @@ fn main() {
     }
 
     /*
-     * Next we should read the fasta sequences from STDIN, start our threads and do some work
+     * Next we should read the fasta sequences from STDIN, we will only process those sequences longer than 70 bp's
      */
     let records: Vec<(String, String)> = fasta::Reader::new(io::stdin())
         .records()
@@ -125,6 +135,10 @@ fn main() {
         .filter(|(_, seq)| seq.len() > 70)
         .collect();
 
+    /*
+     * Now we use the Rayon Parallel Iterator to perform the viterbi algorithm on each of the sequences,
+     * this will return a Vec of predictions
+     */
     let predictions: Vec<Prediction> = records
         .into_par_iter()
         .map(|(header, sequence)| {
@@ -135,9 +149,8 @@ fn main() {
         .collect();
 
     /*
-     * Join all of the work of these threads
+     * Process -e parameter to get output metadata file
      */
-
     let mut metadata_output: Option<File> = None;
     if matches.is_present("metadata") {
         metadata_output = Some(create_file_if_not_exists(
@@ -145,6 +158,9 @@ fn main() {
         ));
     }
 
+    /*
+     * Process -d parameter to get output dna file
+     */
     let mut dna_output: Option<File> = None;
     if matches.is_present("output") {
         dna_output = Some(create_file_if_not_exists(
@@ -152,11 +168,10 @@ fn main() {
         ));
     }
 
+    /*
+     * Finally display each of our predictions
+     */
     predictions.into_iter().for_each(|prediction| {
         print_prediction(prediction, &mut metadata_output, &mut dna_output);
-        }
-    );
+    });
 }
-
-
-

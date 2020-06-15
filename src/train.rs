@@ -1,7 +1,15 @@
+use super::dna_helpers::{nt2int, tr2int};
+use super::helpers::get_executable_path;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use whiteread::parse_string;
-use super::helpers::{get_executable_path};
+
+/**
+ * train.rs
+ * ========
+ * This file contains code responsible for reading training files and building the respective Train and HMM structs
+ * from those files.
+ */
 
 const MFILENAME: &'static str = "train/gene";
 const M1FILENAME: &'static str = "train/rgene";
@@ -11,22 +19,6 @@ const PFILENAME: &'static str = "train/stop";
 const S1FILENAME: &'static str = "train/stop1";
 const P1FILENAME: &'static str = "train/start1";
 const DFILENAME: &'static str = "train/pwm";
-
-const CODON: &'static [char] = &['A', 'C', 'G', 'T', 'N'];
-
-const CODON_CODE: &'static [char] = &[
-  'K', 'N', 'K', 'N', 'T', 'T', 'T', 'T', 'R', 'S', 'R', 'S', 'I', 'I', 'M', 'I', 'Q', 'H', 'Q',
-  'H', 'P', 'P', 'P', 'P', 'R', 'R', 'R', 'R', 'L', 'L', 'L', 'L', 'E', 'D', 'E', 'D', 'A', 'A',
-  'A', 'A', 'G', 'G', 'G', 'G', 'V', 'V', 'V', 'V', '*', 'Y', '*', 'Y', 'S', 'S', 'S', 'S', '*',
-  'C', 'W', 'C', 'L', 'F', 'L', 'F', 'X',
-];
-
-const ANTI_CODON_CODE: &'static [char] = &[
-  'F', 'V', 'L', 'I', 'C', 'G', 'R', 'S', 'S', 'A', 'P', 'T', 'Y', 'D', 'H', 'N', 'L', 'V', 'L',
-  'M', 'W', 'G', 'R', 'R', 'S', 'A', 'P', 'T', '*', 'E', 'Q', 'K', 'F', 'V', 'L', 'I', 'C', 'G',
-  'R', 'S', 'S', 'A', 'P', 'T', 'Y', 'D', 'H', 'N', 'L', 'V', 'L', 'I', '*', 'G', 'R', 'R', 'S',
-  'A', 'P', 'T', '*', 'E', 'Q', 'K', 'X',
-];
 
 #[derive(Clone, Debug)]
 pub struct HMM {
@@ -68,10 +60,12 @@ pub struct Train {
   pub s1_dist: Vec<Vec<f64>>,
   pub e1_dist: Vec<Vec<f64>>,
 }
+
 impl Train {
-  // This is a static method
-  // Static methods don't need to be called by an instance
-  // These methods are generally used as constructors
+  /**
+   * This method will build a new Train struct from the train/ folder stored in the same path as the
+   * executable.
+   */
   pub fn from_file() -> Train {
     let mut result = Train {
       trans: vec![vec![vec![vec![0.0; 4]; 16]; 6]; 44],
@@ -98,6 +92,9 @@ impl Train {
     result.load_pwm_dist();
     result
   }
+  /**
+   * This method wil load the train/gene file into the trans field of our struct
+   */
   fn load_m_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/gene.";
     let mut path = get_executable_path();
@@ -119,7 +116,9 @@ impl Train {
       }
     }
   }
-
+  /**
+   * This method wil load the train/rgene file into the rtrans field of our struct
+   */
   fn load_m_1_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/rgene.";
     let mut path = get_executable_path();
@@ -142,6 +141,9 @@ impl Train {
     }
   }
 
+  /**
+   * This method wil load the train/noncoding file into the noncoding field of our struct
+   */
   fn load_noncoding_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/noncoding.";
     let mut path = get_executable_path();
@@ -162,8 +164,11 @@ impl Train {
     }
   }
 
+  /**
+   * This method wil load the train/pwm file into the s_dist/e_dist/s1_dist/e1_dist fields of our struct
+   */
   fn load_pwm_dist(&mut self) {
-    const READ_ERROR: &'static str = "Something went wrong while reading train/noncoding.";
+    const READ_ERROR: &'static str = "Something went wrong while reading train/pwm.";
     let mut path = get_executable_path();
     path.push(DFILENAME);
     let file = File::open(path).expect(READ_ERROR);
@@ -190,7 +195,9 @@ impl Train {
       }
     }
   }
-
+  /**
+   * This method wil load the train/start file into the start field of our struct
+   */
   fn load_start_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/start.";
     let mut path = get_executable_path();
@@ -211,6 +218,9 @@ impl Train {
     }
   }
 
+  /**
+   * This method wil load the train/stop file into the stop field of our struct
+   */
   fn load_stop_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/stop.";
     let mut path = get_executable_path();
@@ -231,6 +241,9 @@ impl Train {
     }
   }
 
+  /**
+   * This method wil load the train/start file into the start1 fields of our struct
+   */
   fn load_start_1_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/stop1.";
     let mut path = get_executable_path();
@@ -250,7 +263,9 @@ impl Train {
       }
     }
   }
-
+  /**
+   * This method wil load the train/stop file into the stop1 fields of our struct
+   */
   fn load_stop_1_state(&mut self) {
     const READ_ERROR: &'static str = "Something went wrong while reading train/start1.";
     let mut path = get_executable_path();
@@ -273,6 +288,9 @@ impl Train {
 }
 
 impl HMM {
+  /**
+   * This method will yield the HMM struct based on the specified train file path
+   */
   pub fn from_file(train_file: &str) -> HMM {
     let mut result = HMM {
       initial_state: vec![0.0; 29],
@@ -300,6 +318,9 @@ impl HMM {
     result
   }
 
+  /**
+   * This method will read the contents of the specified training file path into the HMM struct
+   */
   fn load_transition(&mut self, train_file: &str) {
     let file = File::open(train_file).expect("An error occured while opening the training file.");
     let reader = BufReader::new(file);
@@ -337,193 +358,4 @@ impl HMM {
       }
     }
   }
-}
-
-/*
-Code for loading the relevant information into the HMM struct
- */
-
-pub fn get_prob_from_cg(hmm: &mut HMM, train: &Train, seq: &String) -> usize {
-  //change from void to int, Ye, April 18, 2016
-  let mut cg_count: usize = 0;
-  let len_seq = seq.len();
-
-  for c in seq.chars() {
-    cg_count += match c {
-      'c' | 'C' | 'g' | 'G' => 1,
-      _ => 0,
-    }
-  }
-  let cg_count_i = ((((cg_count as f64 * 1.0) / len_seq as f64) * 100.0).floor() as i32) - 26;
-  if cg_count_i < 0 {
-    cg_count = 0;
-  } else if cg_count_i > 43 {
-    cg_count = 43;
-  } else {
-    cg_count = cg_count_i as usize;
-  }
-  hmm.e_m = train.trans[cg_count].clone();
-  hmm.e_m_1 = train.rtrans[cg_count].clone();
-  hmm.tr_r_r = train.noncoding[cg_count].clone();
-  hmm.tr_s = train.start[cg_count].clone();
-  hmm.tr_e = train.stop[cg_count].clone();
-  hmm.tr_s_1 = train.start1[cg_count].clone();
-  hmm.tr_e_1 = train.stop1[cg_count].clone();
-  hmm.s_dist = train.s_dist[cg_count].clone();
-  hmm.e_dist = train.e_dist[cg_count].clone();
-  hmm.s1_dist = train.s1_dist[cg_count].clone();
-  hmm.e1_dist = train.e1_dist[cg_count].clone();
-  cg_count
-}
-
-/**
- * Converts a nucleotide character to an integer
- */
-pub fn nt2int(nt: char) -> usize {
-  match nt {
-    'A' | 'a' => 0,
-    'C' | 'c' => 1,
-    'G' | 'g' => 2,
-    'T' | 't' => 3,
-    _ => 4,
-  }
-}
-
-fn nt2int_rc(nt: &char) -> usize {
-  match nt {
-    'A' | 'a' => 3,
-    'C' | 'c' => 2,
-    'G' | 'g' => 1,
-    'T' | 't' => 0,
-    _ => 4,
-  }
-}
-
-fn tr2int(tr: &String) -> usize {
-  match tr.as_str() {
-    "MM" => 0,
-    "MI" => 1,
-    "MD" => 2,
-    "II" => 3,
-    "IM" => 4,
-    "DD" => 5,
-    "DM" => 6,
-    "GE" => 7,
-    "GG" => 8,
-    "ER" => 9,
-    "RS" => 10,
-    "RR" => 11,
-    "ES" => 12,
-    "ES1" => 13,
-    _ => panic!(format!("Unknown transition: {}", tr)),
-  }
-}
-
-pub fn trinucleotide(a: &char, b: &char, c: &char) -> usize {
-  let mut result = match a {
-    'A' | 'a' => 0,
-    'C' | 'c' => 16,
-    'G' | 'g' => 32,
-    'T' | 't' => 48,
-    _ => 0,
-  };
-  result += match b {
-    'A' | 'a' => 0,
-    'C' | 'c' => 4,
-    'G' | 'g' => 8,
-    'T' | 't' => 12,
-    _ => 0,
-  };
-  result += match c {
-    'A' | 'a' => 0,
-    'C' | 'c' => 1,
-    'G' | 'g' => 2,
-    'T' | 't' => 3,
-    _ => 0,
-  };
-  result
-}
-
-fn trinucleotide_pep(a: &char, b: &char, c: &char) -> usize {
-  let mut result = match a {
-    'A' | 'a' => 0,
-    'C' | 'c' => 16,
-    'G' | 'g' => 32,
-    'T' | 't' => 48,
-    _ => 64,
-  };
-  if result < 64 {
-    result += match b {
-      'A' | 'a' => 0,
-      'C' | 'c' => 4,
-      'G' | 'g' => 8,
-      'T' | 't' => 12,
-      _ => {
-        result = 64;
-        0
-      }
-    };
-  }
-  if result < 64 {
-    result += match c {
-      'A' | 'a' => 0,
-      'C' | 'c' => 1,
-      'G' | 'g' => 2,
-      'T' | 't' => 3,
-      _ => {
-        result = 64;
-        0
-      }
-    };
-  }
-  result
-}
-
-pub fn get_rc_dna(dna: &Vec<char>) -> Vec<char> {
-  let len = dna.len();
-  let mut result = vec!['\0'; len];
-  for (i, c) in dna.iter().enumerate() {
-    result[len - i - 1] = CODON[nt2int_rc(&*c)]
-  }
-  result
-}
-
-pub fn get_protein(dna: &Vec<char>, strand: bool, wholegenome: bool) -> Vec<char> {
-  let len = dna.len();
-  let mut protein = vec!['\0'; len / 3];
-
-  if strand {
-    for i in (0..len).step_by(3) {
-      if i / 3 < len / 3 {
-        protein[i / 3] = CODON_CODE[trinucleotide_pep(&dna[i], &dna[i + 1], &dna[i + 2])];
-      }
-    }
-  } else {
-    for i in (0..len).step_by(3) {
-      if (len - i) / 3 > 0 {
-        protein[(len - i) / 3 - 1] =
-          ANTI_CODON_CODE[trinucleotide_pep(&dna[i], &dna[i + 1], &dna[i + 2])];
-      }
-    }
-  }
-  if protein[len / 3 - 1] == '*' {
-    protein.pop();
-  }
-
-  if wholegenome {
-    return protein; //short reads, skip
-  }
-
-  if strand {
-    let s = trinucleotide_pep(&dna[0], &dna[1], &dna[2]);
-    if s == trinucleotide_pep(&'G', &'T', &'G') || s == trinucleotide_pep(&'T', &'T', &'G') {
-      protein[0] = 'M';
-    }
-  } else {
-    let s = trinucleotide_pep(&dna[len - 3], &dna[len - 2], &dna[len - 1]);
-    if s == trinucleotide_pep(&'C', &'A', &'C') || s == trinucleotide_pep(&'C', &'A', &'A') {
-      protein[0] = 'M';
-    }
-  }
-  protein
 }

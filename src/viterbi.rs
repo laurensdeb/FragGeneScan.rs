@@ -1,8 +1,20 @@
 use super::constants::*;
-use super::train::{get_protein, get_rc_dna, nt2int, trinucleotide, Train, HMM};
+use super::dna_helpers::{get_protein, get_rc_dna, nt2int, trinucleotide};
+use super::helpers::{strlen, strncpy};
+use super::train::{Train, HMM};
 use rayon::prelude::*;
 use std::convert::TryInto;
 
+/**
+ * viterbi.rs
+ * ==========
+ * This file contains the viterbi::viterbi function used for running an HMM on a specified input sequence
+ * and gathering the output predictions from that run of the algorithm.
+ */
+
+/**
+ * The following structs are used for storing the predictions output by viterbi.
+ */
 pub struct Prediction {
 	pub head: String,
 	pub outs: Vec<Out>,
@@ -22,6 +34,11 @@ pub struct Out {
 	pub forward: bool,
 }
 
+/**
+ * This function will run the viterbi algorithm for the specified HMM and Train structs on the given sequence,
+ * the parameter wholegenome specifies whether a whole genome sequence was provided and the parameter cg gives
+ * the CG score of the sequence (see dna_helpers.rs), the head parameter contains the identifier of the sequence.
+ */
 pub fn viterbi(
 	hmm: &HMM,
 	train: &Train,
@@ -75,7 +92,6 @@ pub fn viterbi(
 				&& (sequence[2] == 'G' || sequence[2] == 'g'))
 			|| ((sequence[1] == 'G' || sequence[1] == 'g')
 				&& (sequence[2] == 'A' || sequence[2] == 'a')))
-	// TODO: this needs to be a lot cleaner!
 	{
 		alpha[E_STATE][0] = max_dbl;
 		alpha[E_STATE][1] = max_dbl;
@@ -181,9 +197,9 @@ pub fn viterbi(
 							for j in (M1_STATE..=M5_STATE).rev() {
 								let mut num_d: isize = -10;
 								if j >= i {
-									num_d = i as isize - j as isize + 6; // TODO: this seems ugly
+									num_d = i as isize - j as isize + 6;
 								} else if j + 1 < i {
-									num_d = i as isize - j as isize; // TODO: this seems ugly
+									num_d = i as isize - j as isize;
 								}
 								if num_d > 0 {
 									let temp_alpha = alpha[j][t - 1]
@@ -218,9 +234,9 @@ pub fn viterbi(
 							for j in (M1_STATE..=M6_STATE).rev() {
 								let mut num_d: isize = -10;
 								if j >= i {
-									num_d = i as isize - j as isize + 6; // TODO: this seems ugly
+									num_d = i as isize - j as isize + 6;
 								} else if j + 1 < i {
-									num_d = i as isize - j as isize; // TODO: this seems ugly
+									num_d = i as isize - j as isize;
 								}
 								if num_d > 0 {
 									let temp_alpha = alpha[j][t - 1]
@@ -345,9 +361,9 @@ pub fn viterbi(
 							for j in (M1_STATE_1..=M5_STATE_1).rev() {
 								let mut num_d: isize = -10;
 								if j >= i {
-									num_d = i as isize - j as isize + 6; // TODO: this seems ugly
+									num_d = i as isize - j as isize + 6;
 								} else if j + 1 < i {
-									num_d = i as isize - j as isize; // TODO: this seems ugly
+									num_d = i as isize - j as isize;
 								}
 								if num_d > 0 {
 									let temp_alpha = alpha[j][t - 1]
@@ -373,9 +389,9 @@ pub fn viterbi(
 							for j in (M1_STATE_1..=M6_STATE_1).rev() {
 								let mut num_d: isize = -10;
 								if j >= i {
-									num_d = i as isize - j as isize + 6; // TODO: this seems ugly
+									num_d = i as isize - j as isize + 6;
 								} else if j + 1 < i {
-									num_d = i as isize - j as isize; // TODO: this seems ugly
+									num_d = i as isize - j as isize;
 								}
 								if num_d > 0 {
 									let temp_alpha = alpha[j][t - 1]
@@ -562,9 +578,7 @@ pub fn viterbi(
 					/* bug reported by Yu-Wei */
 					for i in (3..=60).rev() {
 						let i = -(i as isize);
-						if (t as isize) + i + 2 < len_seq as isize
-						// TODO: probably needs some more work
-						{
+						if (t as isize) + i + 2 < len_seq as isize {
 							let idx: usize = (i + 60) as usize;
 							start_freq -= hmm.tr_e[idx][trinucleotide(
 								&sequence[(t as isize + i) as usize],
@@ -576,9 +590,7 @@ pub fn viterbi(
 				} else {
 					for i in (3..=t).rev() {
 						let i = -(i as isize);
-						if t as isize + i + 2 < len_seq as isize
-						// TODO: probably needs some more work
-						{
+						if t as isize + i + 2 < len_seq as isize {
 							let idx: usize = (i + 60) as usize;
 							sub_sum += hmm.tr_e[idx][trinucleotide(
 								&sequence[(t as isize + i) as usize],
@@ -1199,27 +1211,4 @@ pub fn viterbi(
 		}
 	}
 	prediction
-}
-
-fn strlen(s: &String) -> usize {
-	let mut result = 0;
-	for c in s.chars() {
-		if c != '\0' {
-			result += 1;
-		} else {
-			break;
-		}
-	}
-	result
-}
-
-fn strncpy(target: &mut Vec<char>, source: &Vec<char>, start_pos: usize, len: usize) {
-	let sourcelen = source.len();
-	for i in start_pos..(start_pos + len) {
-		if i < sourcelen {
-			target[i - start_pos] = source[i];
-		} else {
-			target[i - start_pos] = '\0';
-		}
-	}
 }

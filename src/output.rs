@@ -1,16 +1,29 @@
-use super::viterbi::{Prediction};
-use super::helpers::{write_data};
+use super::helpers::write_data;
+use super::viterbi::Prediction;
 use std::fs::File;
 
+/**
+ * output.rs
+ * =========
+ * This file contains methods responsible for processing the Prediction structs resulting from a run of viterbi::viterbi,
+ * it will take care of writing the output to the proper channel (stdout / (optional) metadata files).
+ */
 
-pub fn print_prediction(prediction: Prediction, metadata_output: &mut Option<File>, dna_output: &mut Option<File>) {
+/**
+ * This method will print a single Prediction to stdout as AA sequence and optionally output metadata and dna metadata.
+ */
+pub fn print_prediction(
+    prediction: Prediction,
+    metadata_output: &mut Option<File>,
+    dna_output: &mut Option<File>,
+) {
+    // Should we output to the metadata file
     if metadata_output.is_some() {
         write_data(
             metadata_output.as_mut().unwrap(),
             format!("{}\n", prediction.head),
         );
     }
-    
     for out in prediction.outs {
         print_aa(
             &prediction.head,
@@ -19,6 +32,7 @@ pub fn print_prediction(prediction: Prediction, metadata_output: &mut Option<Fil
             out.forward,
             &out.protein,
         );
+        // Should we output to the metadata file
         if metadata_output.is_some() {
             print_metadata(
                 metadata_output.as_mut().unwrap(),
@@ -30,6 +44,7 @@ pub fn print_prediction(prediction: Prediction, metadata_output: &mut Option<Fil
                 out.delete,
             );
         }
+        // Should we output to the dna metadata file
         if dna_output.is_some() {
             print_dna_metadata(
                 dna_output.as_mut().unwrap(),
@@ -43,7 +58,9 @@ pub fn print_prediction(prediction: Prediction, metadata_output: &mut Option<Fil
     }
 }
 
-
+/**
+ * Helper method to print amino acids to stdout in correct format
+ */
 fn print_aa(head: &String, start_t: usize, end_t: usize, forward: bool, protein: &String) {
     println!(
         ">{}_{}_{}_{}",
@@ -55,6 +72,9 @@ fn print_aa(head: &String, start_t: usize, end_t: usize, forward: bool, protein:
     println!("{}", protein);
 }
 
+/**
+ * Helper method to write dna output metadata to the specified output file
+ */
 fn print_dna_metadata(
     dna_output: &mut File,
     head: &String,
@@ -76,6 +96,9 @@ fn print_dna_metadata(
     write_data(dna_output, format!("{}\n", dna));
 }
 
+/**
+ * Helper method to write metadata to the specified output file
+ */
 fn print_metadata(
     out: &mut File,
     start_t: usize,
@@ -100,6 +123,9 @@ fn print_metadata(
     write_data(out, String::from("\n"));
 }
 
+/**
+ * Helper method to convert the strand (forward/reverse) to a +/- character respectively.
+ */
 fn forward_to_chr(forward: bool) -> char {
     match forward {
         true => '+',
