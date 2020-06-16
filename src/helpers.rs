@@ -44,31 +44,3 @@ pub fn get_executable_path() -> PathBuf {
   };
   path
 }
-
-/**
- * Helper method to emulate the behaviour of strlen
- */
-pub fn strlen(s: &String) -> usize {
-  let mut result = 0;
-  for c in s.chars() {
-    if c != '\0' {
-      result += 1;
-    } else {
-      break;
-    }
-  }
-  result
-}
-/**
- * Helper method to emulate the behaviour of strncpy
- */
-pub fn strncpy(target: &mut Vec<char>, source: &Vec<char>, start_pos: usize, len: usize) {
-  let sourcelen = source.len();
-  for i in start_pos..(start_pos + len) {
-    if i < sourcelen {
-      target[i - start_pos] = source[i];
-    } else {
-      target[i - start_pos] = '\0';
-    }
-  }
-}

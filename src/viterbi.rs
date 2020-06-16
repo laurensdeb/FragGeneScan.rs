@@ -1,9 +1,7 @@
 use super::constants::*;
 use super::dna_helpers::{get_protein, get_rc_dna, nt2int, trinucleotide};
-use super::helpers::{strlen, strncpy};
 use super::train::{Train, HMM};
 use rayon::prelude::*;
-use std::convert::TryInto;
 
 /**
  * viterbi.rs
@@ -925,8 +923,6 @@ pub fn viterbi(
 	let mut codon_start = 0;
 	let mut start_t: isize = -1;
 
-	let mut codon = vec!['\0'; 4];
-	let mut utr = vec!['\0'; 65];
 
 	let mut insert: [usize; 100] = [0; 100];
 	let mut delete: [usize; 100] = [0; 100];
@@ -1026,9 +1022,7 @@ pub fn viterbi(
 					if refine {
 						//add refinement of the start codons here, Ye, April 16, 2016
 						let start_old = start_t;
-						codon[0] = '\0';
-						strncpy(&mut codon, sequence, (start_old - 1).try_into().unwrap(), 3);
-						codon[3] = '\0';
+						let mut codon = sequence[(start_old - 1) as usize..(start_old + 2) as usize].to_vec();
 						let mut s = 0;
 						//find the optimal start codon within 30bp up- and downstream of start codon
 						let mut e_save = 0.0;
@@ -1039,18 +1033,12 @@ pub fn viterbi(
 							&& (start_old - 1 - s - 35 >= 0)
 						{
 							if c != "ATG" || c != "GTG" || c != "TTG" {
-								utr[0] = '\0';
-								strncpy(
-									&mut utr,
-									sequence,
-									(start_old - 1 - s - 30).try_into().unwrap(),
-									63,
-								);
-								utr[63] = '\0';
+								let utr = sequence[(start_old - 1 - s - 30) as usize..(start_old - 1 - s - 30 + 63) as usize].to_vec();
 								//printf("check s=%d, codon %s\n", s, codon);
-								let freq_sum = -(0..(strlen(&utr.iter().collect()) - 2))
+								let freq_sum = -(0..61)
 									.into_par_iter()
 									.map(|j| {
+										let j = j as usize;
 										let idx = trinucleotide(&utr[j], &utr[j + 1], &utr[j + 2]);
 										train.start[cg][j][idx]
 									})
@@ -1066,14 +1054,7 @@ pub fn viterbi(
 								 //getchar();
 							}
 							s += 3;
-							codon[0] = '\0';
-							strncpy(
-								&mut codon,
-								sequence,
-								(start_old - 1 - s).try_into().unwrap(),
-								3,
-							);
-							codon[3] = '\0';
+							codon = sequence[(start_old  - s - 1) as usize..(start_old - s + 2) as usize].to_vec();
 							c = codon[0..3].iter().collect::<String>();
 						}
 						//update start_t YY July 2018
@@ -1116,26 +1097,22 @@ pub fn viterbi(
 					if refine {
 						//add refinement of the start codons here, Ye, April 16, 2016
 						let end_old = end_t; //reverse
-						codon[0] = '\0';
-						strncpy(&mut codon, sequence, (end_t - 3) as usize, 3);
-						codon[3] = '\0';
+						let mut codon = sequence[(end_t - 3) as usize..(end_t) as usize].to_vec();
 						let mut s = 0;
 						//find the optimal start codon within 30bp up- and downstream of start codon
 						let mut e_save = 0.0;
 						let mut s_save = 0; //initialization, YY July 25, 2018
 						let mut c = codon[0..3].iter().collect::<String>();
-
 						while (!(c != "TTA" || c != "CTA" || c != "TCA"))
 							&& (end_old - 2 + s + 35 < len_seq)
 						{
 							if c != "CAT" || c != "CAC" || c != "CAA" {
-								utr[0] = '\0';
-								strncpy(&mut utr, sequence, (end_old - 3 + s - 30) as usize, 63);
-								utr[63] = '\0';
+								let utr = sequence[(end_old - 3 + s - 30) as usize..(end_old - 3 + s - 30 + 64) as usize].to_vec();
 								//printf("check s=%d, codon %s\n", s, codon);
-								let freq_sum = -(0..(strlen(&utr.iter().collect()) - 2))
+								let freq_sum = -(0..61)
 								.into_par_iter()
 								.map(|j| {
+									let j = j as usize;
 									let idx = trinucleotide(&utr[j], &utr[j + 1], &utr[j + 2]);
 									train.stop1[cg][j][idx]
 								})
@@ -1149,9 +1126,7 @@ pub fn viterbi(
 								} //negative chain, s_save = s, add, YY July 2018
 							}
 							s += 3;
-							codon[0] = '\0';
-							strncpy(&mut codon, sequence, (end_old - 3 + s) as usize, 3);
-							codon[3] = '\0';
+							codon = sequence[(end_t - 3 + s) as usize..(end_t + s) as usize].to_vec();
 							c = codon[0..3].iter().collect::<String>();
 						}
 						//update end_t

@@ -21,7 +21,7 @@ pub fn print_prediction(
     if metadata_output.is_some() {
         write_data(
             metadata_output.as_mut().unwrap(),
-            format!("{}\n", prediction.head),
+            format!(">{}\n", prediction.head),
         );
     }
     for out in prediction.outs {
@@ -39,6 +39,7 @@ pub fn print_prediction(
                 out.dna_start_t,
                 out.dna_end_t,
                 out.frame,
+                out.forward,
                 out.final_score,
                 out.insert,
                 out.delete,
@@ -104,13 +105,14 @@ fn print_metadata(
     start_t: usize,
     end_t: usize,
     frame: usize,
+    forward: bool,
     final_score: f64,
     insert: Vec<usize>,
     delete: Vec<usize>,
 ) {
     write_data(
         out,
-        format!("{}\t{}\t+\t{}\t{}\t", start_t, end_t, frame, final_score),
+        format!("{}\t{}\t{}\t{}\t{}\t", start_t, end_t, forward_to_chr(forward), frame, final_score),
     );
     write_data(out, String::from("I:"));
     for i in insert {
