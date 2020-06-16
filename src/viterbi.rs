@@ -84,13 +84,10 @@ pub fn viterbi(
 	let sequence: &Vec<char> = &sequence.chars().collect();
 
 	/* stop state */
-	if (sequence[0] == 'T' || sequence[0] == 't')
-		&& (((sequence[1] == 'A' || sequence[1] == 'a')
-			&& (sequence[2] == 'A' || sequence[2] == 'a'))
-			|| ((sequence[1] == 'A' || sequence[1] == 'a')
-				&& (sequence[2] == 'G' || sequence[2] == 'g'))
-			|| ((sequence[1] == 'G' || sequence[1] == 'g')
-				&& (sequence[2] == 'A' || sequence[2] == 'a')))
+	if sequence[0].to_ascii_uppercase() == 'T'
+		&& ((sequence[1].to_ascii_uppercase() == 'A' && sequence[2].to_ascii_uppercase() == 'A')
+			|| (sequence[1].to_ascii_uppercase() == 'A' && sequence[2].to_ascii_uppercase() == 'G')
+			|| (sequence[1].to_ascii_uppercase() == 'G' && sequence[2].to_ascii_uppercase() == 'A'))
 	{
 		alpha[E_STATE][0] = max_dbl;
 		alpha[E_STATE][1] = max_dbl;
@@ -104,27 +101,21 @@ pub fn viterbi(
 		alpha[M2_STATE][1] = max_dbl;
 		alpha[M1_STATE][0] = max_dbl;
 
-		if (sequence[1] == 'A' || sequence[1] == 'a') && (sequence[2] == 'A' || sequence[2] == 'a')
-		{
+		if sequence[1].to_ascii_uppercase() == 'A' && sequence[2].to_ascii_uppercase() == 'A' {
 			alpha[E_STATE][2] = alpha[E_STATE][2] - log53;
-		} else if (sequence[1] == 'A' || sequence[1] == 'a')
-			&& (sequence[2] == 'G' || sequence[2] == 'g')
+		} else if sequence[1].to_ascii_uppercase() == 'A' && sequence[2].to_ascii_uppercase() == 'G'
 		{
 			alpha[E_STATE][2] = alpha[E_STATE][2] - log16;
-		} else if (sequence[1] == 'G' || sequence[1] == 'g')
-			&& (sequence[2] == 'A' || sequence[2] == 'a')
+		} else if sequence[1].to_ascii_uppercase() == 'G' && sequence[2].to_ascii_uppercase() == 'A'
 		{
 			alpha[E_STATE][2] = alpha[E_STATE][2] - log30;
 		}
 	}
 
-	if (sequence[2] == 'A' || sequence[2] == 'a')
-		&& (((sequence[0] == 'T' || sequence[0] == 't')
-			&& (sequence[1] == 'T' || sequence[1] == 't'))
-			|| ((sequence[0] == 'C' || sequence[0] == 'c')
-				&& (sequence[1] == 'T' || sequence[1] == 't'))
-			|| ((sequence[0] == 'T' || sequence[0] == 't')
-				&& (sequence[1] == 'C' || sequence[1] == 'c')))
+	if sequence[2].to_ascii_uppercase() == 'A'
+		&& ((sequence[0].to_ascii_uppercase() == 'T' && sequence[1].to_ascii_uppercase() == 'T')
+			|| (sequence[0].to_ascii_uppercase() == 'C' && sequence[1].to_ascii_uppercase() == 'T')
+			|| (sequence[0].to_ascii_uppercase() == 'T' && sequence[1].to_ascii_uppercase() == 'C'))
 	{
 		alpha[S_STATE_1][0] = max_dbl;
 		alpha[S_STATE_1][1] = max_dbl;
@@ -135,15 +126,12 @@ pub fn viterbi(
 		alpha[M3_STATE_1][2] = max_dbl;
 		alpha[M6_STATE_1][2] = max_dbl;
 
-		if (sequence[0] == 'T' || sequence[0] == 't') && (sequence[1] == 'T' || sequence[1] == 't')
-		{
+		if sequence[0].to_ascii_uppercase() == 'T' && sequence[1].to_ascii_uppercase() == 'T' {
 			alpha[S_STATE_1][2] = alpha[S_STATE_1][2] - log53;
-		} else if (sequence[0] == 'C' || sequence[0] == 'c')
-			&& (sequence[1] == 'T' || sequence[1] == 't')
+		} else if sequence[0].to_ascii_uppercase() == 'C' && sequence[1].to_ascii_uppercase() == 'T'
 		{
 			alpha[S_STATE_1][2] = alpha[S_STATE_1][2] - log16;
-		} else if (sequence[0] == 'T' || sequence[0] == 't')
-			&& (sequence[1] == 'C' || sequence[1] == 'c')
+		} else if sequence[0].to_ascii_uppercase() == 'T' && sequence[1].to_ascii_uppercase() == 'C'
 		{
 			alpha[S_STATE_1][2] = alpha[S_STATE_1][2] - log30;
 		}
@@ -262,28 +250,23 @@ pub fn viterbi(
 					/* to avoid stop codon */
 					if t < 2 {
 					} else if (i == M2_STATE || i == M5_STATE)
-						&& (sequence[temp_i[j - I1_STATE]] == 'T'
-							|| sequence[temp_i[j - I1_STATE]] == 't')
-						&& t < len_seq - 1 && (((sequence[t] == 'A' || sequence[t] == 'a')
-						&& (sequence[t + 1] == 'A' || sequence[t + 1] == 'a'))
-						|| ((sequence[t] == 'A' || sequence[t] == 'a')
-							&& (sequence[t + 1] == 'G' || sequence[t + 1] == 'g'))
-						|| ((sequence[t] == 'G' || sequence[t] == 'g')
-							&& (sequence[t + 1] == 'A' || sequence[t + 1] == 'a')))
+						&& sequence[temp_i[j - I1_STATE]].to_ascii_uppercase() == 'T'
+						&& t < len_seq - 1 && ((sequence[t].to_ascii_uppercase() == 'A'
+						&& sequence[t + 1].to_ascii_uppercase() == 'A')
+						|| (sequence[t].to_ascii_uppercase() == 'A'
+							&& sequence[t + 1].to_ascii_uppercase() == 'G')
+						|| (sequence[t].to_ascii_uppercase() == 'G'
+							&& sequence[t + 1].to_ascii_uppercase() == 'A'))
 					{
 					} else if (i == M3_STATE || i == M6_STATE)
 						&& temp_i[j - I1_STATE] as isize - 1 > 0
-						&& (sequence[temp_i[j - I1_STATE] - 1] == 'T'
-							|| sequence[temp_i[j - I1_STATE] - 1] == 't')
-						&& (((sequence[temp_i[j - I1_STATE]] == 'A'
-							|| sequence[temp_i[j - I1_STATE]] == 'a')
-							&& (sequence[t] == 'A' || sequence[t] == 'a'))
-							|| ((sequence[temp_i[j - I1_STATE]] == 'A'
-								|| sequence[temp_i[j - I1_STATE]] == 'a')
-								&& (sequence[t] == 'G' || sequence[t] == 'g'))
-							|| ((sequence[temp_i[j - I1_STATE]] == 'G'
-								|| sequence[temp_i[j - I1_STATE]] == 'g')
-								&& (sequence[t] == 'A' || sequence[t] == 'a')))
+						&& sequence[temp_i[j - I1_STATE] - 1].to_ascii_uppercase() == 'T'
+						&& ((sequence[temp_i[j - I1_STATE]].to_ascii_uppercase() == 'A'
+							&& sequence[t].to_ascii_uppercase() == 'A')
+							|| (sequence[temp_i[j - I1_STATE]].to_ascii_uppercase() == 'A'
+								&& sequence[t].to_ascii_uppercase() == 'G')
+							|| (sequence[temp_i[j - I1_STATE]].to_ascii_uppercase() == 'G'
+								&& sequence[t].to_ascii_uppercase() == 'A'))
 					{
 					} else {
 						let temp_alpha = alpha[j][t - 1] - hmm.tr[TR_IM] - log25;
@@ -332,15 +315,15 @@ pub fn viterbi(
 		for i in M1_STATE_1..=M6_STATE_1 {
 			let mut j;
 			if (i == M1_STATE_1 || i == M4_STATE_1)
-				&& t >= 3 && (((sequence[t - 3] == 'T' || sequence[t - 3] == 't')
-				&& (sequence[t - 2] == 'T' || sequence[t - 2] == 't')
-				&& (sequence[t - 1] == 'A' || sequence[t - 1] == 'a'))
-				|| ((sequence[t - 3] == 'C' || sequence[t - 3] == 'c')
-					&& (sequence[t - 2] == 'T' || sequence[t - 2] == 't')
-					&& (sequence[t - 1] == 'A' || sequence[t - 1] == 'a'))
-				|| ((sequence[t - 3] == 'T' || sequence[t - 3] == 't')
-					&& (sequence[t - 2] == 'C' || sequence[t - 2] == 'c')
-					&& (sequence[t - 1] == 'A' || sequence[t - 1] == 'a')))
+				&& t >= 3 && ((sequence[t - 3].to_ascii_uppercase() == 'T'
+				&& sequence[t - 2].to_ascii_uppercase() == 'T'
+				&& sequence[t - 1].to_ascii_uppercase() == 'A')
+				|| (sequence[t - 3].to_ascii_uppercase() == 'C'
+					&& sequence[t - 2].to_ascii_uppercase() == 'T'
+					&& sequence[t - 1].to_ascii_uppercase() == 'A')
+				|| (sequence[t - 3].to_ascii_uppercase() == 'T'
+					&& sequence[t - 2].to_ascii_uppercase() == 'C'
+					&& sequence[t - 1].to_ascii_uppercase() == 'A'))
 			{
 				/* from Start state  since this is actually stop codon in minus strand */
 				alpha[i][t] = alpha[S_STATE_1][t - 1] - hmm.e_m_1[i - M1_STATE_1][from2][to];
@@ -417,32 +400,23 @@ pub fn viterbi(
 					/* to avoid stop codon */
 					if t < 2 || t == len_seq - 1 {
 					} else if (i == M2_STATE_1 || i == M5_STATE_1)
-						&& (sequence[t + 1] == 'A' || sequence[t + 1] == 'a')
-						&& (((sequence[temp_i_1[j - I1_STATE_1]] == 'T'
-							|| sequence[temp_i_1[j - I1_STATE_1]] == 't')
-							&& (sequence[t] == 'T' || sequence[t] == 't'))
-							|| ((sequence[temp_i_1[j - I1_STATE_1]] == 'C'
-								|| sequence[temp_i_1[j - I1_STATE_1]] == 'c')
-								&& (sequence[t] == 'T' || sequence[t] == 't'))
-							|| ((sequence[temp_i_1[j - I1_STATE_1]] == 'T'
-								|| sequence[temp_i_1[j - I1_STATE_1]] == 't')
-								&& (sequence[t] == 'C' || sequence[t] == 'c')))
+						&& sequence[t + 1].to_ascii_uppercase() == 'A'
+						&& ((sequence[temp_i_1[j - I1_STATE_1]].to_ascii_uppercase() == 'T'
+							&& sequence[t].to_ascii_uppercase() == 'T')
+							|| (sequence[temp_i_1[j - I1_STATE_1]].to_ascii_uppercase() == 'C'
+								&& sequence[t].to_ascii_uppercase() == 'T')
+							|| (sequence[temp_i_1[j - I1_STATE_1]].to_ascii_uppercase() == 'T'
+								&& sequence[t].to_ascii_uppercase() == 'C'))
 					{
 					} else if (i == M3_STATE_1 || i == M6_STATE_1)
-						&& (sequence[t] == 'A' || sequence[t] == 'a')
+						&& sequence[t].to_ascii_uppercase() == 'A'
 						&& temp_i_1[j - I1_STATE_1] as isize - 1 > 0
-						&& (((sequence[temp_i_1[j - I1_STATE_1] - 1] == 'T'
-							|| sequence[temp_i_1[j - I1_STATE_1] - 1] == 't')
-							&& (sequence[temp_i_1[j - I1_STATE_1]] == 'T'
-								|| sequence[temp_i_1[j - I1_STATE_1]] == 't'))
-							|| ((sequence[temp_i_1[j - I1_STATE_1] - 1] == 'C'
-								|| sequence[temp_i_1[j - I1_STATE_1] - 1] == 'c')
-								&& (sequence[temp_i_1[j - I1_STATE_1]] == 'T'
-									|| sequence[temp_i_1[j - I1_STATE_1]] == 't'))
-							|| ((sequence[temp_i_1[j - I1_STATE_1] - 1] == 'T'
-								|| sequence[temp_i_1[j - I1_STATE_1] - 1] == 't')
-								&& (sequence[temp_i_1[j - I1_STATE_1]] == 'C'
-									|| sequence[temp_i_1[j - I1_STATE_1]] == 'c')))
+						&& ((sequence[temp_i_1[j - I1_STATE_1] - 1].to_ascii_uppercase() == 'T'
+							&& sequence[temp_i_1[j - I1_STATE_1]].to_ascii_uppercase() == 'T')
+							|| (sequence[temp_i_1[j - I1_STATE_1] - 1].to_ascii_uppercase() == 'C'
+								&& sequence[temp_i_1[j - I1_STATE_1]].to_ascii_uppercase() == 'T')
+							|| (sequence[temp_i_1[j - I1_STATE_1] - 1].to_ascii_uppercase() == 'T'
+								&& sequence[temp_i_1[j - I1_STATE_1]].to_ascii_uppercase() == 'C'))
 					{
 					} else {
 						let temp_alpha = alpha[j][t - 1] - hmm.tr[TR_IM] - log25;
@@ -519,13 +493,13 @@ pub fn viterbi(
 			path[E_STATE][t] = NOSTATE;
 
 			if t < len_seq - 2
-				&& (sequence[t] == 'T' || sequence[t] == 't')
-				&& (((sequence[t + 1] == 'A' || sequence[t + 1] == 'a')
-					&& (sequence[t + 2] == 'A' || sequence[t + 2] == 'a'))
-					|| ((sequence[t + 1] == 'A' || sequence[t + 1] == 'a')
-						&& (sequence[t + 2] == 'G' || sequence[t + 2] == 'g'))
-					|| ((sequence[t + 1] == 'G' || sequence[t + 1] == 'g')
-						&& (sequence[t + 2] == 'A' || sequence[t + 2] == 'a')))
+				&& sequence[t].to_ascii_uppercase() == 'T'
+				&& ((sequence[t + 1].to_ascii_uppercase() == 'A'
+					&& sequence[t + 2].to_ascii_uppercase() == 'A')
+					|| (sequence[t + 1].to_ascii_uppercase() == 'A'
+						&& sequence[t + 2].to_ascii_uppercase() == 'G')
+					|| (sequence[t + 1].to_ascii_uppercase() == 'G'
+						&& sequence[t + 2].to_ascii_uppercase() == 'A'))
 			{
 				alpha[E_STATE][t + 2] = max_dbl;
 				/* transition from frame4,frame5,and frame6 */
@@ -554,16 +528,16 @@ pub fn viterbi(
 				alpha[M2_STATE][t + 1] = max_dbl;
 				alpha[M1_STATE][t] = max_dbl;
 
-				if (sequence[t + 1] == 'A' || sequence[t + 1] == 'a')
-					&& (sequence[t + 2] == 'A' || sequence[t + 2] == 'a')
+				if sequence[t + 1].to_ascii_uppercase() == 'A'
+					&& sequence[t + 2].to_ascii_uppercase() == 'A'
 				{
 					alpha[E_STATE][t + 2] = alpha[E_STATE][t + 2] - log54;
-				} else if (sequence[t + 1] == 'A' || sequence[t + 1] == 'a')
-					&& (sequence[t + 2] == 'G' || sequence[t + 2] == 'g')
+				} else if sequence[t + 1].to_ascii_uppercase() == 'A'
+					&& sequence[t + 2].to_ascii_uppercase() == 'G'
 				{
 					alpha[E_STATE][t + 2] = alpha[E_STATE][t + 2] - log16;
-				} else if (sequence[t + 1] == 'G' || sequence[t + 1] == 'g')
-					&& (sequence[t + 2] == 'A' || sequence[t + 2] == 'a')
+				} else if sequence[t + 1].to_ascii_uppercase() == 'G'
+					&& sequence[t + 2].to_ascii_uppercase() == 'A'
 				{
 					alpha[E_STATE][t + 2] = alpha[E_STATE][t + 2] - log30;
 				}
@@ -636,13 +610,13 @@ pub fn viterbi(
 			path[S_STATE_1][t] = NOSTATE;
 
 			if t < len_seq - 2
-				&& (sequence[t + 2] == 'A' || sequence[t + 2] == 'a')
-				&& (((sequence[t] == 'T' || sequence[t] == 't')
-					&& (sequence[t + 1] == 'T' || sequence[t + 1] == 't'))
-					|| ((sequence[t] == 'C' || sequence[t] == 'c')
-						&& (sequence[t + 1] == 'T' || sequence[t + 1] == 't'))
-					|| ((sequence[t] == 'T' || sequence[t] == 't')
-						&& (sequence[t + 1] == 'C' || sequence[t + 1] == 'c')))
+				&& sequence[t + 2].to_ascii_uppercase() == 'A'
+				&& ((sequence[t].to_ascii_uppercase() == 'T'
+					&& sequence[t + 1].to_ascii_uppercase() == 'T')
+					|| (sequence[t].to_ascii_uppercase() == 'C'
+						&& sequence[t + 1].to_ascii_uppercase() == 'T')
+					|| (sequence[t].to_ascii_uppercase() == 'T'
+						&& sequence[t + 1].to_ascii_uppercase() == 'C'))
 			{
 				alpha[S_STATE_1][t] = max_dbl;
 				path[S_STATE_1][t] = R_STATE as i8;
@@ -666,16 +640,16 @@ pub fn viterbi(
 				alpha[M3_STATE_1][t + 2] = max_dbl;
 				alpha[M6_STATE_1][t + 2] = max_dbl;
 
-				if (sequence[t] == 'T' || sequence[t] == 't')
-					&& (sequence[t + 1] == 'T' || sequence[t + 1] == 't')
+				if sequence[t].to_ascii_uppercase() == 'T'
+					&& sequence[t + 1].to_ascii_uppercase() == 'T'
 				{
 					alpha[S_STATE_1][t + 2] = alpha[S_STATE_1][t + 2] - log54;
-				} else if (sequence[t] == 'C' || sequence[t] == 'c')
-					&& (sequence[t + 1] == 'T' || sequence[t + 1] == 't')
+				} else if sequence[t].to_ascii_uppercase() == 'C'
+					&& sequence[t + 1].to_ascii_uppercase() == 'T'
 				{
 					alpha[S_STATE_1][t + 2] = alpha[S_STATE_1][t + 2] - log16;
-				} else if (sequence[t] == 'T' || sequence[t] == 't')
-					&& (sequence[t + 1] == 'C' || sequence[t + 1] == 'c')
+				} else if sequence[t].to_ascii_uppercase() == 'T'
+					&& sequence[t + 1].to_ascii_uppercase() == 'C'
 				{
 					alpha[S_STATE_1][t + 2] = alpha[S_STATE_1][t + 2] - log30;
 				}
@@ -722,11 +696,11 @@ pub fn viterbi(
 			path[S_STATE][t] = NOSTATE;
 
 			if t < len_seq - 2
-				&& (sequence[t + 1] == 'T' || sequence[t + 1] == 't')
-				&& (sequence[t + 2] == 'G' || sequence[t + 2] == 'g')
-				&& ((sequence[t] == 'A' || sequence[t] == 'a')
-					|| (sequence[t] == 'G' || sequence[t] == 'g')
-					|| (sequence[t] == 'T' || sequence[t] == 't'))
+				&& sequence[t + 1].to_ascii_uppercase() == 'T'
+				&& sequence[t + 2].to_ascii_uppercase() == 'G'
+				&& (sequence[t].to_ascii_uppercase() == 'A'
+					|| sequence[t].to_ascii_uppercase() == 'G'
+					|| sequence[t].to_ascii_uppercase() == 'T')
 			{
 				alpha[S_STATE][t] = max_dbl;
 				alpha[S_STATE][t + 1] = max_dbl;
@@ -747,11 +721,11 @@ pub fn viterbi(
 					path[S_STATE][t] = E_STATE_1 as i8;
 				}
 
-				if sequence[t] == 'A' || sequence[t] == 'a' {
+				if sequence[t].to_ascii_uppercase() == 'A' {
 					alpha[S_STATE][t + 2] = alpha[S_STATE][t + 2] - log83;
-				} else if sequence[t] == 'G' || sequence[t] == 'g' {
+				} else if sequence[t].to_ascii_uppercase() == 'G' {
 					alpha[S_STATE][t + 2] = alpha[S_STATE][t + 2] - (0.10 as f64).ln();
-				} else if sequence[t] == 'T' || sequence[t] == 't' {
+				} else if sequence[t].to_ascii_uppercase() == 'T' {
 					alpha[S_STATE][t + 2] = alpha[S_STATE][t + 2] - log07;
 				}
 
@@ -811,11 +785,11 @@ pub fn viterbi(
 			path[E_STATE_1][t] = NOSTATE;
 
 			if t < len_seq - 2
-				&& (sequence[t] == 'C' || sequence[t] == 'c')
-				&& (sequence[t + 1] == 'A' || sequence[t + 1] == 'a')
-				&& ((sequence[t + 2] == 'T' || sequence[t + 2] == 't')
-					|| (sequence[t + 2] == 'C' || sequence[t + 2] == 'c')
-					|| (sequence[t + 2] == 'A' || sequence[t + 2] == 'a'))
+				&& sequence[t].to_ascii_uppercase() == 'C'
+				&& sequence[t + 1].to_ascii_uppercase() == 'A'
+				&& (sequence[t + 2].to_ascii_uppercase() == 'T'
+					|| sequence[t + 2].to_ascii_uppercase() == 'C'
+					|| sequence[t + 2].to_ascii_uppercase() == 'A')
 			{
 				/* transition from frame6 */
 				alpha[E_STATE_1][t + 2] = alpha[M6_STATE_1][t - 1] - hmm.tr[TR_GE];
@@ -825,11 +799,11 @@ pub fn viterbi(
 				path[E_STATE_1][t + 1] = E_STATE_1 as i8;
 				path[E_STATE_1][t + 2] = E_STATE_1 as i8;
 
-				if sequence[t + 2] == 'T' || sequence[t + 2] == 't' {
+				if sequence[t + 2].to_ascii_uppercase() == 'T' {
 					alpha[E_STATE_1][t + 2] = alpha[E_STATE_1][t + 2] - log83;
-				} else if sequence[t + 2] == 'C' || sequence[t + 2] == 'c' {
+				} else if sequence[t + 2].to_ascii_uppercase() == 'C' {
 					alpha[E_STATE_1][t + 2] = alpha[E_STATE_1][t + 2] - (0.10 as f64).ln();
-				} else if sequence[t + 2] == 'A' || sequence[t + 2] == 'a' {
+				} else if sequence[t + 2].to_ascii_uppercase() == 'A' {
 					alpha[E_STATE_1][t + 2] = alpha[E_STATE_1][t + 2] - log07;
 				}
 
@@ -922,7 +896,6 @@ pub fn viterbi(
 
 	let mut codon_start = 0;
 	let mut start_t: isize = -1;
-
 
 	let mut insert: [usize; 100] = [0; 100];
 	let mut delete: [usize; 100] = [0; 100];
@@ -1022,7 +995,8 @@ pub fn viterbi(
 					if refine {
 						//add refinement of the start codons here, Ye, April 16, 2016
 						let start_old = start_t;
-						let mut codon = sequence[(start_old - 1) as usize..(start_old + 2) as usize].to_vec();
+						let mut codon =
+							sequence[(start_old - 1) as usize..(start_old + 2) as usize].to_vec();
 						let mut s = 0;
 						//find the optimal start codon within 30bp up- and downstream of start codon
 						let mut e_save = 0.0;
@@ -1033,7 +1007,9 @@ pub fn viterbi(
 							&& (start_old - 1 - s - 35 >= 0)
 						{
 							if c != "ATG" || c != "GTG" || c != "TTG" {
-								let utr = sequence[(start_old - 1 - s - 30) as usize..(start_old - 1 - s - 30 + 63) as usize].to_vec();
+								let utr = sequence[(start_old - 1 - s - 30) as usize
+									..(start_old - 1 - s - 30 + 63) as usize]
+									.to_vec();
 								//printf("check s=%d, codon %s\n", s, codon);
 								let freq_sum = -(0..61)
 									.into_par_iter()
@@ -1054,7 +1030,9 @@ pub fn viterbi(
 								 //getchar();
 							}
 							s += 3;
-							codon = sequence[(start_old  - s - 1) as usize..(start_old - s + 2) as usize].to_vec();
+							codon = sequence
+								[(start_old - s - 1) as usize..(start_old - s + 2) as usize]
+								.to_vec();
 							c = codon[0..3].iter().collect::<String>();
 						}
 						//update start_t YY July 2018
@@ -1107,16 +1085,18 @@ pub fn viterbi(
 							&& (end_old - 2 + s + 35 < len_seq)
 						{
 							if c != "CAT" || c != "CAC" || c != "CAA" {
-								let utr = sequence[(end_old - 3 + s - 30) as usize..(end_old - 3 + s - 30 + 64) as usize].to_vec();
+								let utr = sequence[(end_old - 3 + s - 30) as usize
+									..(end_old - 3 + s - 30 + 64) as usize]
+									.to_vec();
 								//printf("check s=%d, codon %s\n", s, codon);
 								let freq_sum = -(0..61)
-								.into_par_iter()
-								.map(|j| {
-									let j = j as usize;
-									let idx = trinucleotide(&utr[j], &utr[j + 1], &utr[j + 2]);
-									train.stop1[cg][j][idx]
-								})
-								.sum::<f64>();
+									.into_par_iter()
+									.map(|j| {
+										let j = j as usize;
+										let idx = trinucleotide(&utr[j], &utr[j + 1], &utr[j + 2]);
+										train.stop1[cg][j][idx]
+									})
+									.sum::<f64>();
 								if s == 0 {
 									e_save = freq_sum;
 									s_save = s;
@@ -1126,7 +1106,8 @@ pub fn viterbi(
 								} //negative chain, s_save = s, add, YY July 2018
 							}
 							s += 3;
-							codon = sequence[(end_t - 3 + s) as usize..(end_t + s) as usize].to_vec();
+							codon =
+								sequence[(end_t - 3 + s) as usize..(end_t + s) as usize].to_vec();
 							c = codon[0..3].iter().collect::<String>();
 						}
 						//update end_t
