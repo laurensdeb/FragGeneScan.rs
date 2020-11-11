@@ -1,6 +1,8 @@
 use super::helpers::write_data;
 use super::viterbi::Prediction;
 use std::fs::File;
+use std::sync::{Arc, Mutex};
+
 
 /**
  * output.rs
@@ -14,13 +16,17 @@ use std::fs::File;
  */
 pub fn print_prediction(
     prediction: Prediction,
-    metadata_output: &mut Option<File>,
-    dna_output: &mut Option<File>,
+    metadata_output: &Arc<Mutex<Option<File>>>,
+    dna_output: &Arc<Mutex<Option<File>>>,
 ) {
+    let metadata_option = &mut *(metadata_output.lock().unwrap());
+    let dna_option = &mut *(dna_output.lock().unwrap());
+
+    
     // Should we output to the metadata file
-    if metadata_output.is_some() {
+    if metadata_option.is_some() {
         write_data(
-            metadata_output.as_mut().unwrap(),
+            metadata_option.as_mut().unwrap(),
             format!(">{}\n", prediction.head),
         );
     }
@@ -33,9 +39,9 @@ pub fn print_prediction(
             &out.protein,
         );
         // Should we output to the metadata file
-        if metadata_output.is_some() {
+        if metadata_option.is_some() {
             print_metadata(
-                metadata_output.as_mut().unwrap(),
+                metadata_option.as_mut().unwrap(),
                 out.dna_start_t,
                 out.dna_end_t,
                 out.frame,
@@ -46,9 +52,9 @@ pub fn print_prediction(
             );
         }
         // Should we output to the dna metadata file
-        if dna_output.is_some() {
+        if dna_option.is_some() {
             print_dna_metadata(
-                dna_output.as_mut().unwrap(),
+                dna_option.as_mut().unwrap(),
                 &prediction.head,
                 out.dna_start_t,
                 out.dna_end_t,

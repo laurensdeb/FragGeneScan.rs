@@ -15,7 +15,9 @@ use std::fs::File;
 use std::io::{self};
 use std::path::Path;
 use train::{Train, HMM};
-use viterbi::{viterbi, Prediction};
+use viterbi::{viterbi};
+use std::sync::{Arc, Mutex};
+
 
 /**
  * main.rs
@@ -136,43 +138,37 @@ fn main() {
         .filter(|(_, seq)| seq.len() > 70)
         .collect();
 
-    /*
-     * Now we use the Rayon Parallel Iterator to perform the viterbi algorithm on each of the sequences,
-     * this will return a Vec of predictions
-     */
-    let predictions: Vec<Prediction> = records
-        .into_par_iter()
-        .map(|(header, sequence)| {
-            let mut local_hmm = hmm.clone();
-            let cg = get_prob_from_cg(&mut local_hmm, &train, &sequence);
-            viterbi(&local_hmm, &train, &sequence, wholegenome, cg, &header)
-        })
-        .collect();
-
+    
     /*
      * Process -e parameter to get output metadata file
      */
-    let mut metadata_output: Option<File> = None;
+    let mut metadata_output: Arc<Mutex<Option<File>>> = Arc::new(Mutex::new(None));
     if matches.is_present("metadata") {
-        metadata_output = Some(create_file_if_not_exists(
+        metadata_output = Arc::new(Mutex::new(Some(create_file_if_not_exists(
             matches.value_of("metadata").unwrap(),
-        ));
+        ))));
     }
 
     /*
      * Process -d parameter to get output dna file
      */
-    let mut dna_output: Option<File> = None;
+    let mut dna_output: Arc<Mutex<Option<File>>> = Arc::new(Mutex::new(None));
     if matches.is_present("output") {
-        dna_output = Some(create_file_if_not_exists(
+        dna_output = Arc::new(Mutex::new(Some(create_file_if_not_exists(
             matches.value_of("output").unwrap(),
-        ));
+        ))));
     }
 
     /*
-     * Finally display each of our predictions
+     * Now we use the Rayon Parallel Iterator to perform the viterbi algorithm on each of the sequences,
+     * this will return a Vec of predictions
      */
-    predictions.into_iter().for_each(|prediction| {
-        print_prediction(prediction, &mut metadata_output, &mut dna_output);
-    });
+    records
+        .into_par_iter()
+        .for_each(|(header, sequence)| {
+            let mut local_hmm = hmm.clone();
+            let cg = get_prob_from_cg(&mut local_hmm, &train, &sequence);
+            let pred = viterbi(&local_hmm, &train, &sequence, wholegenome, cg, &header);
+            print_prediction(pred, &metadata_output, &dna_output);
+        });
 }
