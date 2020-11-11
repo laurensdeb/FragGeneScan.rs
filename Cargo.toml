@@ -5,6 +5,8 @@ authors = ["Laurens Debackere <laurens.debackere@ugent.be>"]
 edition = "2018"
 homepage = "https://github.com/laurensdeb/FragGeneScan.rs"
 readme = "README.md"
+license = "MIT"
+keywords = ["bio", "genomics"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
